@@ -18,10 +18,9 @@ app.use(helmet());
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
   : [
-      'https://ai-interview-coach-delta.vercel.app',
-      'https://ai-interview-coach.vercel.app',
+      'https://frontend-m16o-b6nlfutww-arshans-projects-6f672697.vercel.app',
+      'https://frontend-m16o.vercel.app',
       'http://localhost:3000',
-      'https://ai-interview-coach-bay.vercel.app',
     ];
 
 app.use(
