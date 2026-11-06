@@ -117,6 +117,7 @@ export async function GET(request: Request) {
     console.log('Successfully created/updated user and got token');
 
     // Add a script to set the token in localStorage and then redirect
+    const safeToken = JSON.stringify(token);
     const html = `
       <html>
         <head>
@@ -127,11 +128,13 @@ export async function GET(request: Request) {
           <script>
             (function() {
               try {
-                localStorage.setItem('token', '${token.replace(/'/g, "\\'")}');
+                const token = ${safeToken};
+                localStorage.setItem('token', token);
+                window.location.href = '/';
               } catch (e) {
                 console.error('Failed to set token:', e);
+                window.location.href = '/login?error=Token storage failed';
               }
-              window.location.href = '/';
             })();
           </script>
           <noscript>
