@@ -17,9 +17,9 @@ function getClient() {
 
 function resolveModel(task) {
   if (task === 'strong') {
-    return process.env.GEMINI_MODEL_STRONG || 'gemini-2.0-flash';
+    return process.env.GEMINI_MODEL_STRONG || 'gemini-3.5-flash';
   }
-  return process.env.GEMINI_MODEL_FAST || 'gemini-2.0-flash-lite';
+  return process.env.GEMINI_MODEL_FAST || 'gemini-3.5-flash';
 }
 
 /**
