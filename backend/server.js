@@ -10,6 +10,9 @@ connectDB();
 
 const app = express();
 
+// Trust proxy (Render/load balancer sets X-Forwarded-For)
+app.set('trust proxy', 1);
+
 // --- Security: Helmet (sets safe HTTP headers) ---
 app.use(helmet());
 
