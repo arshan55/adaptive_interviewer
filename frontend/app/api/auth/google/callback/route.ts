@@ -119,11 +119,24 @@ export async function GET(request: Request) {
     // Add a script to set the token in localStorage and then redirect
     const html = `
       <html>
+        <head>
+          <meta http-equiv="Cache-Control" content="no-store" />
+        </head>
         <body>
+          <p>Signing you in...</p>
           <script>
-            localStorage.setItem('token', '${token}');
-            window.location.href = '/';
+            (function() {
+              try {
+                localStorage.setItem('token', '${token.replace(/'/g, "\\'")}');
+              } catch (e) {
+                console.error('Failed to set token:', e);
+              }
+              window.location.href = '/';
+            })();
           </script>
+          <noscript>
+            <meta http-equiv="refresh" content="0;url=/" />
+          </noscript>
         </body>
       </html>
     `;
