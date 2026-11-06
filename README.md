@@ -6,8 +6,13 @@ A comprehensive, AI-powered interview preparation platform that helps developers
 **GitHub:** [Repository Link]  
 **Documentation:** [Full Docs](./docs)
 
-**What's new (RAG):**
-- Lightweight RAG-for-feedback: Gemini evaluations can be grounded using CodingProblemDetails or semantically-similar past questions. This is scoped to feedback generation only and is feature-flagged via RAG_FEEDBACK_ENABLED.
+**What's new (Adaptive Voice & Multi-Mode Revamp):**
+- **Adaptive Turn Engine**: Dynamic difficulty adjustment (adapts after 2 consecutive strong or weak answers), STAR behavioral probing for HR, and multi-stage progressive hint escalation for DSA coding.
+- **Canonical 21 DSA Patterns**: Pattern-targeted interview configuration with filtering, coverage reporting, and tag management.
+- **Multi-Provider LLM Architecture**: Pluggable provider layer with Groq (Llama 3.1/3.3) primary and Google Gemini fallback, with per-call timeouts, exponential backoff, and Zod-validated JSON repair retries.
+- **Real-Time Voice Experience**: Continuous in-browser Web Speech recognition, 1.2s silence detection auto-submit, sentence-by-sentence text-to-speech streaming, voice barge-in interruption, and speaking pace telemetry (WPM, fillers, latency).
+- **Sandboxed Code Execution**: Client-side Web Worker (JS/TS) and Pyodide (Python) test runner with hidden test masking and 70% test pass-rate + 30% code review weighted grading.
+- **Modular Frontend Architecture**: Componentized interview room (`QuestionPanel`, `CodeEditorPanel`, `VoiceConversationPanel`, `TestResultsPanel`, `ChatTranscript`, `FeedbackPanel`, `ReportView`) reducing monolithic files from 2,200+ lines down to ~400 lines.
 
 
 ## 📋 Table of Contents

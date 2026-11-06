@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Sparkles, CheckCircle2 } from 'lucide-react';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    password2: ''
+    password2: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,33 +36,36 @@ const RegisterPage = () => {
     }
 
     try {
-      const response = await fetch('https://ai-interview-coach-bay.vercel.app/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name,
           email,
-          password
-        })
+          password,
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.errors?.[0]?.msg || 'Registration failed');
+        throw new Error(data.errors?.[0]?.msg || data.error || 'Registration failed');
       }
 
       localStorage.setItem('token', data.token);
       setSuccess(true);
       setTimeout(() => {
-        router.push('/login');
-      }, 2000); // Redirect after 2 seconds
+        router.push('/');
+      }, 1500);
     } catch (err: any) {
-      // Check if the error message indicates that the user already exists
-      if (err.message.toLowerCase().includes('already exists') || err.message.toLowerCase().includes('duplicate') || err.message.toLowerCase().includes('taken')) {
-        setError('User already exists.');
+      if (
+        err.message.toLowerCase().includes('already exists') ||
+        err.message.toLowerCase().includes('duplicate') ||
+        err.message.toLowerCase().includes('taken')
+      ) {
+        setError('User already exists. Please sign in instead.');
       } else {
         setError(err.message || 'Registration failed');
       }
@@ -71,122 +75,130 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] relative" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
-      <div className="absolute inset-0 w-full h-full bg-white/70 z-0 pointer-events-none" />
-      <div className="relative z-10 flex flex-col justify-center py-12 sm:px-6 lg:px-8 min-h-screen">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-black">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-800">
-            Or{' '}
-            <Link href="/login" className="font-medium text-blue-500 hover:text-blue-400">
-              sign in to your existing account
+    <div
+      className="min-h-screen bg-[#F0F4F8] relative flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        backgroundImage: 'url(/background.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <div className="absolute inset-0 w-full h-full bg-white/75 z-0 pointer-events-none" />
+
+      <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md space-y-6">
+        <div className="text-center">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border-2 border-black bg-yellow-200 text-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-3">
+            <Sparkles className="w-3.5 h-3.5" /> Join Today
+          </span>
+          <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight">
+            Create Your Account
+          </h1>
+          <p className="mt-2 text-sm text-gray-800 font-medium">
+            Already have an account?{' '}
+            <Link href="/login" className="font-bold text-blue-700 hover:underline">
+              Sign in here
             </Link>
           </p>
         </div>
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
-            {success && (
-              <div className="mb-4 bg-green-500 text-white p-3 rounded-md text-sm">
-                Registration successful! Redirecting to login page...
-              </div>
-            )}
-            <form className="space-y-6" onSubmit={onSubmit}>
-              {error && (
-                <div className="bg-red-500 text-white p-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
+        <div className="bg-white/95 rounded-2xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 sm:p-10 space-y-6">
+          {success && (
+            <div className="bg-emerald-100 border-2 border-black text-emerald-900 p-3.5 rounded-xl text-xs font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span>Registration successful! Redirecting...</span>
+            </div>
+          )}
 
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-800">
-                  Full Name
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    value={name}
-                    onChange={onChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+          {error && (
+            <div className="bg-rose-100 border-2 border-black text-rose-900 p-3.5 rounded-xl text-xs font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              {error}
+            </div>
+          )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-800">
-                  Email address
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={onChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+          <form className="space-y-4" onSubmit={onSubmit}>
+            <div>
+              <label htmlFor="name" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={onChange}
+                placeholder="Alex Candidate"
+                className="w-full px-4 py-2.5 border-2 border-black rounded-xl font-medium text-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-800">
-                  Password
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    value={password}
-                    onChange={onChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+            <div>
+              <label htmlFor="email" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+                Email Address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={onChange}
+                placeholder="alex@example.com"
+                className="w-full px-4 py-2.5 border-2 border-black rounded-xl font-medium text-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-              <div>
-                <label htmlFor="password2" className="block text-sm font-medium text-gray-800">
-                  Confirm Password
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="password2"
-                    name="password2"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    value={password2}
-                    onChange={onChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 bg-white text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+            <div>
+              <label htmlFor="password" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={onChange}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 border-2 border-black rounded-xl font-medium text-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {loading ? 'Creating account...' : 'Create account'}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div>
+              <label htmlFor="password2" className="block text-xs font-black uppercase tracking-wider text-black mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                id="password2"
+                name="password2"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password2}
+                onChange={onChange}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 border-2 border-black rounded-xl font-medium text-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 px-4 border-2 border-black rounded-xl text-sm font-black text-white bg-blue-600 hover:bg-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {loading ? 'Creating Account...' : 'Register Candidate Account'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
   );
 };
 
-export default RegisterPage; 
+export default RegisterPage;

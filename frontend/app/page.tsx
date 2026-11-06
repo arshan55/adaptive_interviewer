@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Eye, EyeOff, MessageSquare, Users, BookOpen, Play, ArrowRight, TrendingUp, Calendar, Award, Target, Trash2 } from 'lucide-react';
+import { User, Eye, EyeOff, MessageSquare, Users, BookOpen, Play, ArrowRight, TrendingUp, Calendar, Award, Target, Trash2, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -25,6 +25,8 @@ interface Interview {
   programmingLanguage?: string;
   overallScore?: number;
   overallFeedback?: string;
+  status?: 'active' | 'completing' | 'completed';
+  report?: any;
 }
 
 interface InterviewStats {
@@ -93,8 +95,8 @@ const PerformanceDashboard = ({ interviews }: { interviews: Interview[] }) => {
 
   if (interviews.length === 0) {
     return (
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200 p-8 text-center shadow-sm mb-8">
-        <p className="text-slate-500 font-medium">Complete some interviews to view your performance dashboard!</p>
+      <div className="bg-white/95 rounded-2xl border-3 border-black p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-8">
+        <p className="text-gray-700 font-bold">Complete some interviews to view your performance dashboard!</p>
       </div>
     );
   }
@@ -102,43 +104,43 @@ const PerformanceDashboard = ({ interviews }: { interviews: Interview[] }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       {/* Trend Chart */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col">
-        <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-1">Score Progression</h4>
-        <p className="text-xs text-slate-500 mb-6">Tracking your overall interview ratings chronologically.</p>
+      <div className="bg-white/95 rounded-2xl border-3 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col">
+        <h4 className="text-sm font-black text-black uppercase tracking-wider mb-1">Score Progression</h4>
+        <p className="text-xs text-gray-600 font-medium mb-6">Tracking your overall interview ratings chronologically.</p>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData}>
               <defs>
                 <linearGradient id="scoreColor" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
+                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25}/>
                   <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <XAxis dataKey="date" stroke="#94A3B8" fontSize={11} tickLine={false} />
-              <YAxis domain={[0, 10]} stroke="#94A3B8" fontSize={11} tickLine={false} />
+              <XAxis dataKey="date" stroke="#000000" fontSize={11} tickLine={false} />
+              <YAxis domain={[0, 10]} stroke="#000000" fontSize={11} tickLine={false} />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#1E293B', borderRadius: '12px', border: 'none', color: '#F8FAFC' }}
-                labelClassName="font-bold text-slate-300"
+                contentStyle={{ backgroundColor: '#000000', borderRadius: '12px', border: '2px solid #000', color: '#F8FAFC' }}
+                labelClassName="font-bold text-yellow-300"
               />
-              <Area type="monotone" dataKey="score" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#scoreColor)" name="AI Score" />
+              <Area type="monotone" dataKey="score" stroke="#2563EB" strokeWidth={3} fillOpacity={1} fill="url(#scoreColor)" name="AI Score" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Category Performance Radar Chart */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md flex flex-col">
-        <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-1">Strengths & Topics</h4>
-        <p className="text-xs text-slate-500 mb-6">Topic categorization mapping average scores.</p>
+      <div className="bg-white/95 rounded-2xl border-3 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col">
+        <h4 className="text-sm font-black text-black uppercase tracking-wider mb-1">Strengths & Topics</h4>
+        <p className="text-xs text-gray-600 font-medium mb-6">Topic categorization mapping average scores.</p>
         <div className="h-64 w-full flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-              <PolarGrid stroke="#E2E8F0" />
-              <PolarAngleAxis dataKey="subject" stroke="#64748B" fontSize={10} fontWeight="bold" />
-              <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#94A3B8" fontSize={10} />
-              <Radar name="Avg Score" dataKey="score" stroke="#6366F1" fill="#6366F1" fillOpacity={0.3} />
+              <PolarGrid stroke="#CBD5E1" />
+              <PolarAngleAxis dataKey="subject" stroke="#000000" fontSize={10} fontWeight="bold" />
+              <PolarRadiusAxis angle={30} domain={[0, 10]} stroke="#000000" fontSize={10} />
+              <Radar name="Avg Score" dataKey="score" stroke="#4F46E5" fill="#4F46E5" fillOpacity={0.35} />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#1E293B', borderRadius: '12px', border: 'none', color: '#F8FAFC' }}
+                contentStyle={{ backgroundColor: '#000000', borderRadius: '12px', border: '2px solid #000', color: '#F8FAFC' }}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -269,8 +271,24 @@ const AIInterviewCoach = () => {
     }
   };
 
+  const handleDevLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/dev-login', { method: 'POST' });
+      const data = await response.json();
+      if (response.ok && data.token) {
+        localStorage.setItem('token', data.token);
+        if (data.user?.email) localStorage.setItem('email', data.user.email);
+        setIsAuthenticated(true);
+        setCurrentView('dashboard');
+      }
+    } catch (error) {
+      console.error('Dev login error:', error);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('email');
     setIsAuthenticated(false);
     setCurrentView('home');
     setStats(null);
@@ -396,6 +414,16 @@ const AIInterviewCoach = () => {
           <p className="text-center text-sm text-gray-700">
             Don't have an account? <Link href="/register" className="text-blue-600 hover:underline">Sign Up</Link>
           </p>
+          <div className="pt-3 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleDevLogin}
+              className="w-full bg-slate-900 text-white py-2.5 rounded-xl border-2 border-black font-bold text-sm hover:bg-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-yellow-300" />
+              <span>1-Click Dev Login</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -470,44 +498,67 @@ const AIInterviewCoach = () => {
             <p>No recent interviews. Start a new one!</p>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              {interviews.map((interview: Interview) => (
-                <div key={interview._id} className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-b border-gray-300 py-3 px-2 hover:bg-gray-100 transition-colors cursor-pointer text-sm sm:text-base gap-2 sm:gap-0">
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                    <div className="bg-[#3563E9] p-1 rounded-full">
-                      <Play className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+              {interviews.map((interview: Interview) => {
+                const isCompleting = interview.status === 'completing' && !interview.report;
+                const isCompleted = interview.status === 'completed' || !!interview.report;
+                const roleTitle = interview.role?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'Interview';
+                
+                return (
+                  <div key={interview._id} className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-b border-gray-300 py-3 px-2 hover:bg-gray-100 transition-colors cursor-pointer text-sm sm:text-base gap-2 sm:gap-0">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className={`p-1 rounded-full ${isCompleting ? 'bg-yellow-500' : 'bg-[#3563E9]'}`}>
+                        <Play className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{roleTitle}</p>
+                        <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-600">
+                          <span className="flex items-center space-x-1">
+                            <Calendar className="h-3 w-3" />
+                            <span className="truncate">{formatDateTime(interview.date)}</span>
+                          </span>
+                          {isCompleting && (
+                            <span className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full text-xs font-bold">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Evaluation in Progress
+                            </span>
+                          )}
+                          {isCompleted && !isCompleting && interview.overallScore && (
+                            <span className="flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-bold">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Completed
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{interview.role?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</p>
-                      <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-600">
-                        <span className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3" />
-                          <span className="truncate">{formatDateTime(interview.date)}</span>
-                        </span>
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
+                      <div className="text-right min-w-[50px] sm:min-w-[60px]">
+                        <p className="text-base sm:text-lg font-bold text-gray-800">{interview.overallScore ? interview.overallScore + '/10' : (isCompleting ? '—' : '--')}</p>
+                        <p className="text-xs text-gray-600">Score</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/interview/${interview._id}`); }}
+                          disabled={isCompleting}
+                          className={`px-2 py-1 sm:px-3 sm:py-1 rounded hover:shadow text-xs font-medium transition-all ${
+                            isCompleting
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {isCompleting ? 'Evaluating...' : 'View Report'}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteInterview(interview._id); }}
+                          className="px-2 py-1 sm:px-3 sm:py-1 bg-red-500 text-white rounded hover:bg-red-700 text-xs font-medium shadow flex items-center"
+                        >
+                          <Trash2 className="h-3 w-3 mr-0.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
-                    <div className="text-right min-w-[50px] sm:min-w-[60px]">
-                      <p className="text-base sm:text-lg font-bold text-gray-800">{interview.overallScore ? interview.overallScore + '/10' : '--'}</p>
-                    <p className="text-xs text-gray-600">Score</p>
-                  </div>
-                    <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); router.push(`/interview/${interview._id}`); }}
-                        className="px-2 py-1 sm:px-3 sm:py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs font-medium shadow"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteInterview(interview._id); }}
-                        className="px-2 py-1 sm:px-3 sm:py-1 bg-red-500 text-white rounded hover:bg-red-700 text-xs font-medium shadow flex items-center"
-                    >
-                      <Trash2 className="h-3 w-3 mr-0.5" />
-                    </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </main>
@@ -516,40 +567,43 @@ const AIInterviewCoach = () => {
   );
 
   const HomeView = () => (
-    <div className="min-h-screen bg-[#F0F4F8] relative" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="min-h-screen bg-[#F0F4F8] relative" style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       {/* Overlay to lighten background */}
-      <div className="absolute inset-0 w-full h-full bg-white/70 z-0 pointer-events-none" />
+      <div className="absolute inset-0 w-full h-full bg-white/75 z-0 pointer-events-none" />
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Hero Section - full width */}
         <section className="w-full relative flex flex-col items-center justify-center py-8 sm:py-12 lg:py-20 px-4 overflow-hidden">
           {/* Hero background image */}
           <img src="/background.png" alt=" " className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none z-0" />
-          <div className="max-w-4xl w-full bg-white rounded-2xl shadow-lg p-4 sm:p-8 lg:p-12 text-left flex flex-col lg:flex-row items-center gap-6 lg:gap-10 relative z-10">
+          <div className="max-w-4xl w-full bg-white/95 rounded-2xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 sm:p-10 lg:p-12 text-left flex flex-col lg:flex-row items-center gap-6 lg:gap-10 relative z-10">
             <div className="flex-1 text-center lg:text-left">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold text-gray-800 mb-3 sm:mb-4 leading-tight">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border-2 border-black bg-yellow-200 text-black text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">
+                Adaptive Voice Interviewer
+              </span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-black mb-3 sm:mb-4 leading-tight tracking-tight">
                 <span className="block">
-                  Level up your <span className="font-bold text-teal-600">Interview Game</span>
+                  Level up your <span className="text-blue-600 underline decoration-yellow-300">Interview Game</span>
                 </span>
                 <span className="block">
-                  with <span className="font-bold text-teal-600">AI Training Buddy</span>
+                  with AI Practice Coach
                 </span>
               </h2>
-              <p className="text-gray-600 text-sm sm:text-base lg:text-lg mt-2 text-center lg:text-left">
-                Practice interviews anytime, get feedback instantly, and boost your confidence with every session.
+              <p className="text-gray-800 text-sm sm:text-base lg:text-lg mt-2 text-center lg:text-left font-medium">
+                Practice realistic technical & behavioral interviews, get scored on real metrics, and boost your confidence before the real round.
               </p>
               <div className="mt-6 sm:mt-8 flex justify-center lg:justify-start">
                 {isAuthenticated ? (
                   <Link
                     href="/interview/role-select"
-                    className="flex items-center space-x-2 bg-[#3563E9] hover:bg-[#2C7A7B] text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold text-sm sm:text-base lg:text-lg transition-colors shadow-lg"
+                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl border-3 border-black font-black text-sm sm:text-base lg:text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                   >
-                    <Play className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                     <span>Start Interview</span>
                   </Link>
                 ) : (
                   <Link
                     href="/register"
-                    className="flex items-center space-x-2 bg-[#3563E9] hover:bg-[#2C7A7B] text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold text-sm sm:text-base lg:text-lg transition-colors shadow-lg"
+                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl border-3 border-black font-black text-sm sm:text-base lg:text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                   >
                     <span>Get Started</span>
                   </Link>
@@ -561,7 +615,7 @@ const AIInterviewCoach = () => {
                 <img
                   src="/logoo.png"
                   alt="Interview Buddy"
-                  className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 object-cover rounded-full"
+                  className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 object-cover rounded-full border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                 />
               </div>
             </div>
@@ -570,46 +624,46 @@ const AIInterviewCoach = () => {
 
         {/* Stats Cards (if authenticated and stats available) */}
         {isAuthenticated && stats && (
-          <div className="px-4 sm:px-6 lg:px-8">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-gray-600 text-xs sm:text-sm font-medium">Total Interviews</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.totalInterviews}</p>
+              <div className="bg-white/95 rounded-2xl border-3 border-black p-5 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-700 text-xs sm:text-sm font-bold uppercase tracking-wider">Total Interviews</p>
+                    <p className="text-2xl sm:text-3xl font-black text-black">{stats.totalInterviews}</p>
                   </div>
-                  <div className="bg-[#3563E9] p-2 sm:p-3 rounded-full">
-                    <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                </div>
+                  <div className="bg-blue-200 border-2 border-black p-2.5 sm:p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Calendar className="h-5 w-5 text-black" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-gray-600 text-xs sm:text-sm font-medium">Average Score</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.averageScore.toFixed(1)}/10</p>
+              <div className="bg-white/95 rounded-2xl border-3 border-black p-5 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-700 text-xs sm:text-sm font-bold uppercase tracking-wider">Average Score</p>
+                    <p className="text-2xl sm:text-3xl font-black text-black">{stats.averageScore.toFixed(1)}/10</p>
                   </div>
-                  <div className="bg-[#2C7A7B] p-2 sm:p-3 rounded-full">
-                    <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                </div>
+                  <div className="bg-emerald-200 border-2 border-black p-2.5 sm:p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <TrendingUp className="h-5 w-5 text-black" />
+                  </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-gray-600 text-xs sm:text-sm font-medium">Best Score</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stats.bestScore}/10</p>
+              <div className="bg-white/95 rounded-2xl border-3 border-black p-5 sm:p-6 sm:col-span-2 lg:col-span-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-700 text-xs sm:text-sm font-bold uppercase tracking-wider">Best Score</p>
+                    <p className="text-2xl sm:text-3xl font-black text-black">{stats.bestScore}/10</p>
                   </div>
-                  <div className="bg-[#3563E9] p-2 sm:p-3 rounded-full">
-                    <Award className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                </div>
+                  <div className="bg-yellow-200 border-2 border-black p-2.5 sm:p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Award className="h-5 w-5 text-black" />
+                  </div>
                 </div>
               </div>
             </div>
             
             {/* Interactive Performance Charts */}
             <div className="mt-8">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">Performance Analytics</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-black mb-6">Performance Analytics</h2>
               <PerformanceDashboard interviews={interviews} />
             </div>
           </div>
@@ -617,63 +671,87 @@ const AIInterviewCoach = () => {
 
         {/* Recent Interviews (if authenticated) */}
         {isAuthenticated && interviews && interviews.length > 0 && (
-          <div className="px-4 sm:px-6 lg:px-8 mb-6 sm:mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Recent Interviews</h3>
+          <div className="px-4 sm:px-6 lg:px-8 mb-6 sm:mb-8 max-w-5xl mx-auto w-full">
+            <div className="bg-white/95 rounded-2xl border-4 border-black p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+              <h3 className="text-lg sm:text-xl font-black text-black mb-4">Recent Interview Sessions</h3>
               <div className="space-y-3 sm:space-y-4">
               {(() => {
                 const interviewsToShow = showAllInterviews ? interviews : interviews.slice(0, 4);
                 return (
                   <>
-                    {interviewsToShow.map((interview: Interview) => (
-                        <div key={interview._id} className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-b border-gray-300 py-3 px-2 hover:bg-gray-100 transition-colors cursor-pointer text-sm sm:text-base gap-2 sm:gap-0">
+                    {interviewsToShow.map((interview: Interview) => {
+                      const isCompleting = interview.status === 'completing' && !interview.report;
+                      const isCompleted = interview.status === 'completed' || !!interview.report;
+                      const roleTitle = interview.role?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'Interview';
+                      
+                      return (
+                        <div key={interview._id} className="flex flex-col sm:flex-row sm:items-center justify-between w-full border-2 border-black rounded-xl p-3 sm:p-4 hover:bg-yellow-50/50 transition-colors cursor-pointer text-sm sm:text-base gap-2 sm:gap-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                           <div className="flex items-center space-x-2 sm:space-x-3">
-                          <div className="bg-[#3563E9] p-1 rounded-full">
-                              <Play className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                          </div>
+                            <div className={`p-2 rounded-lg ${isCompleting ? 'bg-yellow-200 border border-black' : 'bg-blue-200 border border-black'}`}>
+                              <Play className="h-4 w-4 text-black fill-current" />
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{interview.role?.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</p>
-                              <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-600">
-                              <span className="flex items-center space-x-1">
-                                <Calendar className="h-3 w-3" />
+                              <p className="font-bold text-black text-sm sm:text-base truncate">{roleTitle}</p>
+                              <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-700 font-medium">
+                                <span className="flex items-center space-x-1">
+                                  <Calendar className="h-3.5 w-3.5 text-gray-600" />
                                   <span className="truncate">{formatDateTime(interview.date)}</span>
-                              </span>
+                                </span>
+                                {isCompleting && (
+                                  <span className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full text-xs font-bold">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Evaluation in Progress
+                                  </span>
+                                )}
+                                {isCompleted && !isCompleting && interview.overallScore && (
+                                  <span className="flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-bold">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Completed
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
+                          <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                             <div className="text-right min-w-[50px] sm:min-w-[60px]">
-                              <p className="text-base sm:text-lg font-bold text-gray-800">{interview.overallScore ? interview.overallScore + '/10' : '--'}</p>
-                          <p className="text-xs text-gray-600">Score</p>
-                        </div>
-                            <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); router.push(`/interview/${interview._id}`); }}
-                                className="px-2 py-1 sm:px-3 sm:py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs font-medium shadow"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteInterview(interview._id); }}
-                                className="px-2 py-1 sm:px-3 sm:py-1 bg-red-500 text-white rounded hover:bg-red-700 text-xs font-medium shadow flex items-center"
-                          >
-                            <Trash2 className="h-3 w-3 mr-0.5" />
-                          </button>
+                              <p className="text-base sm:text-lg font-black text-black">{interview.overallScore ? interview.overallScore + '/10' : (isCompleting ? '—' : '--')}</p>
+                              <p className="text-xs font-bold text-gray-600">Score</p>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); router.push(`/interview/${interview._id}`); }}
+                                disabled={isCompleting}
+                                className={`px-3 py-1.5 rounded-lg border-2 border-black text-xs font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${
+                                  isCompleting
+                                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                              >
+                                {isCompleting ? 'Evaluating...' : 'View Report'}
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteInterview(interview._id); }}
+                                className="p-1.5 bg-rose-200 text-rose-900 border-2 border-black rounded-lg hover:bg-rose-300 text-xs font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                title="Delete Session"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {interviews.length > 4 && !showAllInterviews && (
                       <button
-                          className="mt-2 px-3 py-2 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-800 font-medium text-sm sm:text-base"
+                        className="mt-2 px-4 py-2 bg-white hover:bg-slate-100 rounded-xl border-2 border-black text-black font-black text-xs sm:text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                         onClick={() => setShowAllInterviews(true)}
                       >
-                        More
+                        Show More
                       </button>
                     )}
                     {showAllInterviews && interviews.length > 4 && (
                       <button
-                          className="mt-2 px-3 py-2 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-800 font-medium text-sm sm:text-base"
+                        className="mt-2 px-4 py-2 bg-white hover:bg-slate-100 rounded-xl border-2 border-black text-black font-black text-xs sm:text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                         onClick={() => setShowAllInterviews(false)}
                       >
                         Show Less
@@ -689,46 +767,46 @@ const AIInterviewCoach = () => {
         {/* Features Section */}
         <div id="features" className="w-full flex justify-center px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8 max-w-5xl w-full">
-            <div className="bg-blue-200 border-4 border-black p-4 sm:p-6 rounded-xl shadow-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-300 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
-                <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
+            <div className="bg-blue-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-3">Realistic Questions</h3>
-              <p className="text-gray-700 text-sm sm:text-base">
+              <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Realistic Questions</h3>
+              <p className="text-gray-800 text-sm sm:text-base font-medium">
                 Practice with AI-powered questions tailored to your field and experience level.
               </p>
             </div>
-            <div className="bg-green-200 border-4 border-black p-4 sm:p-6 rounded-xl shadow-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
-                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+            <div className="bg-emerald-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-3">Personalized Feedback</h3>
-              <p className="text-gray-700 text-sm sm:text-base">
+              <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Personalized Feedback</h3>
+              <p className="text-gray-800 text-sm sm:text-base font-medium">
                 Receive instant, actionable feedback to help you improve after every session.
               </p>
             </div>
-            <div className="bg-yellow-200 border-4 border-black p-4 sm:p-6 rounded-xl shadow-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-300 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
-                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
+            <div className="bg-yellow-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-3">Track Progress</h3>
-              <p className="text-gray-700 text-sm sm:text-base">
+              <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Track Progress</h3>
+              <p className="text-gray-800 text-sm sm:text-base font-medium">
                 Monitor your growth with detailed stats and see how you stack up over time.
               </p>
             </div>
-            <div className="bg-purple-200 border-4 border-black p-4 sm:p-6 rounded-xl shadow-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-300 rounded-lg flex items-center justify-center mb-3 sm:mb-4">
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
+            <div className="bg-pink-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-pink-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-3">Flexible Practice</h3>
-              <p className="text-gray-700 text-sm sm:text-base">
+              <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Flexible Practice</h3>
+              <p className="text-gray-800 text-sm sm:text-base font-medium">
                 Practice anytime, anywhere, and tailor your sessions to your schedule and needs.
               </p>
             </div>
           </div>
         </div>
         {/* About Us Footer */}
-        <footer id="about-footer" className="bg-[#D9E2EC] border-t border-slate-300 py-6 sm:py-8 mt-8 sm:mt-12 w-full">
+        <footer id="about-footer" className="bg-white/95 border-t-4 border-black py-8 sm:py-10 mt-8 sm:mt-12 w-full">
           <div className="max-w-4xl mx-auto px-4 flex flex-col md:flex-row justify-between items-stretch gap-0 md:gap-0 text-center md:text-left">
             <div className="flex-1 flex flex-col justify-center md:pr-8">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">About Us</h2>

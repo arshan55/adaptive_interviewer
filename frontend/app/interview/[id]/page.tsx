@@ -2,54 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
-import {
-  VIDEO_ANSWER_PLACEHOLDER,
-  isVideoAnswerPlaceholder,
-} from '@/lib/interviewConstants';
-
-interface Question {
-  questionText: string;
-  answerText: string | null;
-  codeAnswer: string | null;
-  feedback: string | null;
-  score: number | null;
-  codeFeedback: string | null;
-  codeScore: number | null;
-}
-
-interface Interview {
-  _id: string;
-  role: string;
-  programmingLanguage?: string;
-  questions: Question[];
-  date: string;
-  overallFeedback?: string;
-  overallScore?: number;
-}
-
-const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 }
-};
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
+import { AlertCircle, ArrowRight, Sparkles, RotateCcw, Loader2 } from 'lucide-react';
+import { ReportView } from '@/components/interview/ReportView';
+import { InterviewSessionState } from '@/hooks/useInterviewSession';
 
 export default function InterviewDetailsPage() {
   const params = useParams();
   const id = typeof params?.id === 'string' ? params.id : '';
-  const [interview, setInterview] = useState<Interview | null>(null);
+  const [interview, setInterview] = useState<InterviewSessionState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showSection, setShowSection] = useState<'overall' | 'questions' | 'feedback'>('overall');
+  const [polling, setPolling] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,8 +21,14 @@ export default function InterviewDetailsPage() {
       return;
     }
 
+    let cancelled = false;
+    let pollInterval: NodeJS.Timeout | null = null;
+
     const fetchInterview = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
         const token = localStorage.getItem('token');
         if (!token) {
           router.push('/login');
@@ -69,364 +38,204 @@ export default function InterviewDetailsPage() {
         const response = await fetch(`/api/interviews/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch interview');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || errorData.msg || 'Failed to fetch interview evaluation report');
         }
 
         const data = await response.json();
-        setInterview(data);
-      } catch (err) {
-        console.error('Error fetching interview:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch interview');
+        if (!cancelled) {
+          setInterview(data as InterviewSessionState);
+          
+          // Start polling if interview is completing
+          if (data.status === 'completing' && !data.report) {
+            setPolling(true);
+            pollInterval = setInterval(async () => {
+              try {
+                const pollRes = await fetch(`/api/interviews/${id}`, {
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+                    'Content-Type': 'application/json',
+                  },
+                  cache: 'no-store',
+                });
+                if (pollRes.ok) {
+                  const pollData = await pollRes.json();
+                  if (!cancelled) {
+                    setInterview(pollData as InterviewSessionState);
+                    if (pollData.status === 'completed' || pollData.report) {
+                      setPolling(false);
+                      if (pollInterval) clearInterval(pollInterval);
+                    }
+                  }
+                }
+              } catch {
+                // ignore polling errors
+              }
+            }, 2000);
+          }
+        }
+      } catch (err: any) {
+        console.error('Error fetching interview evaluation report:', err);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load report');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchInterview();
-  }, [id, router]);
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+    return () => {
+      cancelled = true;
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [id, router]);
 
   if (loading) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen bg-[#F0F4F8] relative flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8"
-        style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      <div
+        className="min-h-screen bg-[#F0F4F8] relative flex items-center justify-center p-4"
+        style={{
+          backgroundImage: 'url(/background.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
-        <div className="absolute inset-0 w-full h-full bg-white/70 z-0 pointer-events-none" />
-        <motion.div
-          animate={{ 
-            scale: [1, 1.2, 1],
-            rotate: [0, 5, -5, 0]
-          }}
-          transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="relative z-10"
-        >
-          <p className="text-xl text-gray-800">Loading interview details...</p>
-        </motion.div>
-      </motion.div>
+        <div className="absolute inset-0 bg-white/80 z-0" />
+        <div className="relative z-10 max-w-md w-full bg-white/95 rounded-2xl border-4 border-black p-8 text-center space-y-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+          <div className="w-12 h-12 rounded-xl border-2 border-black bg-yellow-200 flex items-center justify-center text-black mx-auto shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <p className="text-base font-black text-black">Loading Assessment Report...</p>
+        </div>
+      </div>
     );
   }
 
-  if (error) {
+  if (error || !interview) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen bg-[#F0F4F8] relative flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8"
-        style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      <div
+        className="min-h-screen bg-[#F0F4F8] relative flex items-center justify-center p-4"
+        style={{
+          backgroundImage: 'url(/background.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
-        <div className="absolute inset-0 w-full h-full bg-white/70 z-0 pointer-events-none" />
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="relative z-10"
-        >
-          <p className="text-red-500 text-xl mb-4">Error: {error}</p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow"
-          >
-            Back to Home
-          </motion.button>
-        </motion.div>
-      </motion.div>
-    );
-  }
-
-  if (!interview) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen bg-[#F0F4F8] relative flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8"
-        style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
-      >
-        <div className="absolute inset-0 w-full h-full bg-white/70 z-0 pointer-events-none" />
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="relative z-10"
-        >
-          <p className="text-yellow-500 text-xl mb-4">Interview not found.</p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow"
-          >
-            Back to Home
-          </motion.button>
-        </motion.div>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-[#F0F4F8] relative py-12 px-4 sm:px-6 lg:px-8"
-      style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
-    >
-      <div className="absolute inset-0 w-full h-full bg-white/70 z-0 pointer-events-none" />
-      <div className="max-w-4xl mx-auto relative z-10">
-        <motion.div 
-          variants={fadeIn}
-          initial="initial"
-          animate="animate"
-          className="flex justify-between items-center mb-8"
-        >
-          <h1 className="text-3xl font-bold text-gray-800">
-            {interview.role.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Interview
-            {interview.programmingLanguage && ` - ${interview.programmingLanguage}`}
-          </h1>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow"
-          >
-            Back to Home
-          </motion.button>
-        </motion.div>
-
-        {/* Three-way Toggle Switch */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white p-2 rounded-lg inline-flex items-center space-x-4 shadow border border-slate-200">
+        <div className="absolute inset-0 bg-white/80 z-0" />
+        <div className="relative z-10 max-w-md w-full bg-white/95 p-8 rounded-2xl border-4 border-black text-center space-y-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+          <div className="w-12 h-12 rounded-xl bg-rose-200 border-2 border-black text-rose-900 mx-auto flex items-center justify-center text-xl font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-black text-black">Report Unavailable</h2>
+          <p className="text-xs text-gray-800 leading-relaxed font-semibold">
+            {error || 'The requested interview report could not be found.'}
+          </p>
+          <div className="flex gap-2 justify-center pt-2">
             <button
-              onClick={() => setShowSection('overall')}
-              className={`px-6 py-2 rounded-lg transition-colors font-semibold ${
-                showSection === 'overall' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-blue-600'
-              }`}
+              type="button"
+              onClick={() => router.push('/')}
+              className="px-4 py-2 bg-black text-white rounded-xl border-2 border-black text-xs font-black hover:bg-gray-800 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
             >
-              Overall Feedback
+              Back to Dashboard
             </button>
             <button
-              onClick={() => setShowSection('questions')}
-              className={`px-6 py-2 rounded-lg transition-colors font-semibold ${
-                showSection === 'questions' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-blue-600'
-              }`}
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl border-2 border-black text-xs font-black hover:bg-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
             >
-              Questions & Answers
-            </button>
-            <button
-              onClick={() => setShowSection('feedback')}
-              className={`px-6 py-2 rounded-lg transition-colors font-semibold ${
-                showSection === 'feedback' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              Feedback on Questions
+              Retry
             </button>
           </div>
         </div>
-
-        {/* Overall Feedback Section */}
-        {showSection === 'overall' && interview.overallFeedback && (
-          <motion.div 
-            variants={fadeIn}
-            initial="initial"
-            animate="animate"
-            className="bg-white mb-8 rounded-xl shadow-lg p-6 border border-slate-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-800">Overall Feedback</h2>
-              {interview.overallScore && (
-                <div
-                  className={`text-xl font-semibold px-4 py-2 rounded ml-4 ${
-                    interview.overallScore >= 7
-                      ? 'bg-green-200 text-green-800'
-                      : interview.overallScore >= 4
-                      ? 'bg-yellow-200 text-yellow-900'
-                      : 'bg-red-200 text-red-800'
-                  }`}
-                >
-                  Score: {interview.overallScore.toFixed(1)}/10
-                </div>
-              )}
-            </div>
-            {/* Sectioned and Color-coded Overall Feedback */}
-            {(() => {
-              const text = interview.overallFeedback;
-              // Split by known section headers (only declare each variable once)
-              const strengthsMatch = text.match(/Key Strengths:([\s\S]*?)(Areas for Improvement:|Recommendations(?: for Future Interviews)?:|Future Interviews Tips:|Tips for Future Interviews:|$)/);
-              const improvementMatch = text.match(/Areas for Improvement:([\s\S]*?)(Recommendations(?: for Future Interviews)?:|Future Interviews Tips:|Tips for Future Interviews:|$)/);
-              const recommendationsMatch = text.match(/(?:Recommendations(?: for Future Interviews)?|Future Interviews Tips|Tips for Future Interviews):([\s\S]*)$/);
-              const mainSummary = text.split('Key Strengths:')[0].trim();
-              return (
-                <div className="space-y-4">
-                  {/* Main Summary */}
-                  {mainSummary && (
-                    <div className="bg-blue-100 border-l-4 border-blue-400 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-1 text-blue-800">Summary</h3>
-                      <div className="text-blue-900">
-                        <ReactMarkdown>{mainSummary}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                  {/* Key Strengths */}
-                  {strengthsMatch && strengthsMatch[1] && (
-                    <div className="bg-green-100 border-l-4 border-green-400 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-1 text-green-800">Key Strengths</h3>
-                      <div className="text-green-900">
-                        <ReactMarkdown>{strengthsMatch[1].trim()}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                  {/* Areas for Improvement */}
-                  {improvementMatch && improvementMatch[1] && (
-                    <div className="bg-yellow-100 border-l-4 border-yellow-400 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-1 text-yellow-800">Areas for Improvement</h3>
-                      <div className="text-yellow-900">
-                        <ReactMarkdown>{improvementMatch[1].trim()}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                  {/* Recommendations */}
-                  {recommendationsMatch && recommendationsMatch[1] && (
-                    <div className="bg-purple-100 border-l-4 border-purple-400 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-1 text-purple-800">Recommendations</h3>
-                      <div className="text-purple-900">
-                        <ReactMarkdown>{recommendationsMatch[1].trim()}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </motion.div>
-        )}
-
-        {/* Questions and Answers View */}
-        {showSection === 'questions' && (
-          <motion.div 
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-            className="space-y-8"
-          >
-            {interview.questions.map((question, index) => (
-              <motion.div
-                key={index}
-                variants={fadeIn}
-                className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 hover:shadow-2xl transition-all duration-300"
-              >
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold mb-2 text-gray-800">Question {index + 1}</h2>
-                  <div className="prose max-w-none overflow-y-auto">
-                    <ReactMarkdown>{question.questionText}</ReactMarkdown>
-                  </div>
-
-                  {isVideoAnswerPlaceholder(question.answerText) && (
-                    <div className="mt-4 bg-blue-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-2 text-blue-800">Your Video Answer</h3>
-                      <p className="text-gray-600 italic">{VIDEO_ANSWER_PLACEHOLDER}</p>
-                    </div>
-                  )}
-
-                  {question.answerText && !isVideoAnswerPlaceholder(question.answerText) && (
-                    <div className="mt-4 bg-blue-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-2 text-blue-800">Your Answer</h3>
-                      <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{question.answerText}</p>
-                    </div>
-                  )}
-
-                  {question.codeAnswer && (
-                    <div className="mt-4 bg-blue-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-2 text-blue-800">Your Code</h3>
-                      <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto">
-                        <code className="text-sm text-gray-800">{question.codeAnswer}</code>
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Feedback on Questions View */}
-        {showSection === 'feedback' && (
-          <motion.div 
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-            className="space-y-8"
-          >
-            {interview.questions.map((question, index) => (
-              <motion.div
-                key={index}
-                variants={fadeIn}
-                className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 hover:shadow-2xl transition-all duration-300"
-              >
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold mb-2 text-gray-800">Question {index + 1}</h2>
-                  {/* General Feedback Section */}
-                  {question.feedback && (
-                    <div className="bg-blue-100 border-l-4 border-blue-400 p-4 rounded-lg mb-2">
-                      <h3 className="text-lg font-semibold mb-1 text-blue-800">General Feedback</h3>
-                      <div className="text-blue-900">
-                        <ReactMarkdown>{question.feedback}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                  {/* Code Feedback Section */}
-                  {question.codeFeedback && (
-                    <div className="bg-purple-100 border-l-4 border-purple-400 p-4 rounded-lg mb-2">
-                      <h4 className="text-lg font-semibold mb-1 text-purple-800">Code Feedback</h4>
-                      <div className="text-purple-900">
-                        <ReactMarkdown>{question.codeFeedback}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                  {/* Score Badges */}
-                  <div className="flex items-center space-x-4 mt-2">
-                    {question.score !== null && (
-                      <div className={`px-4 py-2 rounded font-semibold ${
-                        question.score >= 7 ? 'bg-green-200 text-green-800' : question.score >= 4 ? 'bg-yellow-200 text-yellow-900' : 'bg-red-200 text-red-800'
-                      }`}>
-                        Score: {question.score.toFixed(1)}/10
-                      </div>
-                    )}
-                    {question.codeScore !== null && (
-                      <div className={`px-4 py-2 rounded font-semibold ${
-                        question.codeScore >= 7 ? 'bg-green-200 text-green-800' : question.codeScore >= 4 ? 'bg-yellow-200 text-yellow-900' : 'bg-red-200 text-red-800'
-                      }`}>
-                        Code Score: {question.codeScore.toFixed(1)}/10
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
       </div>
-    </motion.div>
+    );
+  }
+
+  // Active / in-progress interview reminder banner
+  const isActive = interview.status === 'active';
+  const isCompleting = interview.status === 'completing' && !interview.report;
+
+  return (
+    <div
+      className="min-h-screen bg-[#F0F4F8] relative"
+      style={{
+        backgroundImage: 'url(/background.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <div className="absolute inset-0 bg-white/80 z-0 pointer-events-none" />
+
+      <div className="relative z-10">
+        {isActive && (
+          <div className="bg-amber-200 border-b-4 border-black text-black px-4 py-3 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-sm">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-black shrink-0" />
+              <span>This interview session is currently active/in-progress. Showing intermediate evaluation report.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(
+                    'selectedRole',
+                    JSON.stringify({
+                      role: interview.role,
+                      programmingLanguage: interview.programmingLanguage,
+                      config: interview.config,
+                    })
+                  );
+                }
+                router.push('/interview');
+              }}
+              className="px-3.5 py-1.5 bg-black text-white rounded-xl border-2 border-black text-xs font-black hover:bg-gray-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1.5 transition-all"
+            >
+              <span>Resume Interview Room</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {isCompleting && (
+          <div className="bg-blue-100 border-b-4 border-black text-black px-4 py-4 shadow-sm">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center gap-3 mb-3">
+                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                <div>
+                  <p className="font-black text-sm">Generating Your Performance Report...</p>
+                  <p className="text-xs text-gray-700">AI is analyzing your responses, code, and communication metrics</p>
+                </div>
+              </div>
+              <div className="w-full bg-white border-2 border-black rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-blue-600 h-full rounded-full animate-pulse" 
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <p className="text-xs text-gray-700 mt-2 text-center">
+                This usually takes 30-60 seconds. You can <button 
+                  onClick={() => router.push('/')} 
+                  className="text-blue-600 underline hover:text-blue-800 font-bold"
+                >go to Dashboard</button> and check back later.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Modern, comprehensive Evaluation & Performance Report */}
+        <ReportView interview={interview} />
+      </div>
+    </div>
   );
-} 
+}

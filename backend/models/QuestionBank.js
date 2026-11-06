@@ -39,6 +39,12 @@ const QuestionBankSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  // Canonical DSA pattern tags (e.g. 'two-pointers', 'sliding-window')
+  patterns: {
+    type: [String],
+    default: [],
+    index: true
+  },
   role: {
     type: String,
     required: true,
@@ -78,6 +84,12 @@ const QuestionBankSchema = new mongoose.Schema({
   // Lightweight RAG fields
   embedding: {
     type: [Number],
+    default: null
+  },
+  // Phase 1: track which embedding model generated this vector.
+  // If the active model differs from stored embeddingModel, skip RAG for this doc.
+  embeddingModel: {
+    type: String,
     default: null
   },
   // Optional local overrides / fallbacks; primary coding references live in CodingProblemDetails

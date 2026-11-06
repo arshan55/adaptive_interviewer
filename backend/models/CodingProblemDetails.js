@@ -61,6 +61,25 @@ const CodingProblemDetailsSchema = new mongoose.Schema({
     type: [TestCaseSchema],
     default: []
   },
+  // Phase 4: Standardized unified test cases
+  testCases: [
+    {
+      input: { type: String, required: true, trim: true },
+      expected: { type: String, required: true, trim: true },
+      hidden: { type: Boolean, default: false }
+    }
+  ],
+  // Function signature per language (e.g. { javascript: "function ...", python: "def ..." })
+  functionSignature: {
+    type: Map,
+    of: String,
+    default: () => new Map()
+  },
+  entryFunctionName: {
+    type: String,
+    default: null,
+    trim: true
+  },
   referenceSolution: {
     type: String,
     default: null,

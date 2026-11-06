@@ -125,4 +125,71 @@ router.put(
   }
 );
 
+// @route POST api/users/resume
+// @desc Save user resume text and metadata
+// @access Private
+router.post(
+  '/resume',
+  auth,
+  [
+    check('resumeText', 'Resume text is required').not().isEmpty(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { resumeText, fileName } = req.body;
+
+    try {
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        {
+          $set: {
+            resumeText: resumeText.trim(),
+            resumeFileName: fileName || 'Uploaded Resume',
+            resumeUpdatedAt: new Date(),
+          },
+        },
+        { new: true }
+      ).select('-password');
+
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
+
+      res.json({
+        msg: 'Resume saved successfully',
+        resumeText: user.resumeText,
+        resumeFileName: user.resumeFileName,
+        resumeUpdatedAt: user.resumeUpdatedAt,
+      });
+    } catch (err) {
+      console.error('Error saving resume:', err.message);
+      res.status(500).send('Server error');
+    }
+  }
+);
+
+// @route GET api/users/resume
+// @desc Get current user's saved resume
+// @access Private
+router.get('/resume', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('resumeText resumeFileName resumeUpdatedAt');
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    res.json({
+      resumeText: user.resumeText || '',
+      resumeFileName: user.resumeFileName || null,
+      resumeUpdatedAt: user.resumeUpdatedAt || null,
+    });
+  } catch (err) {
+    console.error('Error fetching resume:', err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 module.exports = router; 

@@ -20,6 +20,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const argv = process.argv.slice(2);
 const opts = {
   force: argv.includes('--force'),
+  reEmbed: argv.includes('--re-embed'),
   embedCoding: argv.includes('--embed-coding'),
   batch: 200,
   delayMs: 150,
@@ -54,7 +55,11 @@ async function main() {
 
     if (opts.limit && processed > opts.limit) break;
 
-    if (!opts.force && Array.isArray(doc.embedding) && doc.embedding.length > 0) {
+    const activeModel = process.env.GOOGLE_EMBEDDING_MODEL || 'text-embedding-004';
+    const modelMismatch = doc.embeddingModel && doc.embeddingModel !== activeModel;
+    const shouldSkipExisting = !opts.force && !opts.reEmbed && !modelMismatch && Array.isArray(doc.embedding) && doc.embedding.length > 0;
+
+    if (shouldSkipExisting) {
       console.log(`[${processed}/${total}] Skipping ${qId} (already has embedding)`);
       continue;
     }

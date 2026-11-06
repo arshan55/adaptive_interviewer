@@ -13,6 +13,7 @@ const SCORE_WEIGHTS = {
   company: 2,
   frequency: 1.5,
   acceptance: 1.25,
+  pattern: 2.5,
 };
 
 const normalizeText = (value) =>
@@ -106,12 +107,21 @@ const scoreQuestion = (question, context) => {
   const repetitionPenalty = recentOverlap > 0.5 ? 1.5 : recentOverlap * 0.75;
   const duplicatePenalty = questionIdentityKeys(question).some((key) => context.seenKeys.has(key)) ? 6 : 0;
 
+  // Phase 2: Pattern match score bonus when candidate requests specific DSA patterns
+  let patternScore = 0;
+  if (Array.isArray(context.patterns) && context.patterns.length > 0) {
+    const qPatterns = Array.isArray(question.patterns) ? question.patterns : [];
+    const hasPatternMatch = qPatterns.some((p) => context.patterns.includes(p));
+    patternScore = hasPatternMatch ? 1 : 0;
+  }
+
   const score = (
     (difficultyScore * SCORE_WEIGHTS.difficulty) +
     (topicOverlap * SCORE_WEIGHTS.topics) +
     (companyScore * SCORE_WEIGHTS.company) +
     (frequencyScore * SCORE_WEIGHTS.frequency) +
-    (acceptanceScore * SCORE_WEIGHTS.acceptance) -
+    (acceptanceScore * SCORE_WEIGHTS.acceptance) +
+    (patternScore * SCORE_WEIGHTS.pattern) -
     repetitionPenalty -
     duplicatePenalty
   );
@@ -123,11 +133,12 @@ const scoreQuestion = (question, context) => {
     companyScore,
     frequencyScore,
     acceptanceScore,
+    patternScore,
     duplicatePenalty,
   };
 };
 
-const buildCandidateQuery = (context, loosenDifficulty = false, role = context.role) => {
+const buildCandidateQuery = (context, loosenDifficulty = false, role = context.role, loosenPatterns = false) => {
   const query = {
     role,
   };
@@ -140,16 +151,30 @@ const buildCandidateQuery = (context, loosenDifficulty = false, role = context.r
     query.company = context.company;
   }
 
+  // Phase 2: Mode filter (hr / dsa / mixed)
+  if (context.mode === 'hr') {
+    query.isCodingProblem = false;
+  } else if (context.mode === 'dsa') {
+    query.isCodingProblem = true;
+  }
+
+  // Phase 2: Pattern filter
+  if (!loosenPatterns && Array.isArray(context.patterns) && context.patterns.length > 0) {
+    query.patterns = { $in: context.patterns };
+  }
+
   return query;
 };
 
-const loadAndScoreCandidates = async (context, loosenDifficulty = false) => {
+const loadAndScoreCandidates = async (context, loosenDifficulty = false, loosenPatterns = false) => {
   const roleCandidates = context.role === 'software-engineer'
     ? ['software-engineer']
     : [context.role, 'software-engineer'];
 
   const candidateGroups = await Promise.all(
-    roleCandidates.map((role) => QuestionBank.find(buildCandidateQuery(context, loosenDifficulty, role)).lean())
+    roleCandidates.map((role) =>
+      QuestionBank.find(buildCandidateQuery(context, loosenDifficulty, role, loosenPatterns)).lean()
+    )
   );
 
   return candidateGroups
@@ -185,15 +210,27 @@ const loadAndScoreCandidates = async (context, loosenDifficulty = false) => {
 };
 
 const selectBestQuestion = async (context) => {
-  const scored = await loadAndScoreCandidates(context, false);
-
+  // 1. Try exact difficulty & pattern filters
+  const scored = await loadAndScoreCandidates(context, false, false);
   if (scored.length > 0) {
     return scored[0].question;
   }
 
-  const fallbackScored = await loadAndScoreCandidates(context, true);
+  // 2. Fallback: loosen difficulty
+  const fallbackScored = await loadAndScoreCandidates(context, true, false);
+  if (fallbackScored.length > 0) {
+    return fallbackScored[0].question;
+  }
 
-  return fallbackScored.length > 0 ? fallbackScored[0].question : null;
+  // 3. Fallback: loosen patterns if specified
+  if (Array.isArray(context.patterns) && context.patterns.length > 0) {
+    const loosenPatternsScored = await loadAndScoreCandidates(context, true, true);
+    if (loosenPatternsScored.length > 0) {
+      return loosenPatternsScored[0].question;
+    }
+  }
+
+  return null;
 };
 
 module.exports = {
@@ -201,5 +238,6 @@ module.exports = {
   splitTags,
   questionIdentityKeys,
   questionTopics,
+  scoreQuestion,
   selectBestQuestion,
 };

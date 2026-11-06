@@ -40,6 +40,18 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Interview'
   }],
+  resumeText: {
+    type: String,
+    default: null
+  },
+  resumeFileName: {
+    type: String,
+    default: null
+  },
+  resumeUpdatedAt: {
+    type: Date,
+    default: null
+  },
   date: {
     type: Date,
     default: Date.now
