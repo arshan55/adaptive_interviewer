@@ -20,9 +20,9 @@ function getClient() {
 
 function resolveModel(task) {
   if (task === 'strong') {
-    return process.env.LLM_MODEL_STRONG || 'llama-3.3-70b-versatile';
+    return process.env.LLM_MODEL_STRONG || 'llama-3.1-70b-versatile';
   }
-  return process.env.LLM_MODEL_FAST || 'llama-3.3-70b-versatile';
+  return process.env.LLM_MODEL_FAST || 'llama-3.1-8b-instant';
 }
 
 /**
