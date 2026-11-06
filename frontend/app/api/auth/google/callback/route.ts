@@ -129,7 +129,9 @@ export async function GET(request: Request) {
             (function() {
               try {
                 const token = ${safeToken};
+                console.log('Setting token:', token.substring(0, 20) + '...');
                 localStorage.setItem('token', token);
+                console.log('Token set, reloading...');
                 window.location.href = '/';
               } catch (e) {
                 console.error('Failed to set token:', e);
