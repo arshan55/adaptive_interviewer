@@ -665,49 +665,48 @@ export default function RoleSelectPage() {
             </div>
           </div>
 
-          {/* Resume Upload / Paste area - shown when not "none" */}
+          {/* Resume Upload area - shown when not "none" */}
           {resumeMode !== 'none' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold text-black flex items-center gap-1.5">
-                  <Upload className="w-4 h-4" /> Upload Resume or Paste Text
+                  <FileText className="w-4 h-4 text-purple-700" /> Resume Document
                 </label>
                 {resumeFileName && (
-                  <span className="text-xs font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-lg border border-purple-300">
+                  <span className="text-xs font-black text-purple-900 bg-purple-200 px-2.5 py-0.5 rounded-lg border-2 border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                     {resumeFileName}
                   </span>
                 )}
               </div>
 
               {/* File upload */}
-              <label className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border-2 border-dashed border-black bg-slate-50 hover:bg-purple-50 cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <Upload className="w-4 h-4 text-purple-700" />
-                <span className="text-xs font-bold text-gray-800">
+              <label className="flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-dashed border-black bg-slate-50 hover:bg-purple-50 cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Upload className="w-5 h-5 text-purple-700" />
+                <span className="text-xs sm:text-sm font-bold text-gray-800">
                   {isSavingResume
-                    ? 'Parsing Resume Document...'
+                    ? 'Extracting Resume Intelligence...'
                     : resumeFileName
-                    ? `Loaded: ${resumeFileName}`
-                    : 'Upload Resume Document (.pdf, .docx, .doc, or paste below)'}
+                    ? `Loaded: ${resumeFileName} (Click to replace file)`
+                    : 'Upload Resume File (.pdf, .docx, .doc)'}
                 </span>
                 <input
                   type="file"
-                  accept=".pdf,.docx,.doc,.txt,.md"
+                  accept=".pdf,.docx,.doc"
                   className="hidden"
                   onChange={handleFileUpload}
                   disabled={isSavingResume}
                 />
               </label>
 
-              {/* Paste area */}
-              <textarea
-                value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                placeholder="Or paste your resume text here — name, experience, skills, projects, education..."
-                rows={5}
-                className="w-full p-3 text-xs font-medium rounded-xl border-2 border-black bg-white text-black placeholder-gray-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y"
-              />
+              {resumeFileName && (
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 border-2 border-black p-2.5 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Resume verified & parsed! The AI interviewer will calibrate questions from your background.</span>
+                </div>
+              )}
+
               <p className="text-[11px] text-gray-600 font-medium">
-                AI will extract your skills, projects, and experience to generate highly targeted interview questions.
+                AI extracts your technical projects, experience timeline, and stack to tailor live interview scenarios.
               </p>
             </div>
           )}

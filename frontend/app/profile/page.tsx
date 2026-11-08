@@ -363,54 +363,39 @@ export default function ProfilePage() {
           </div>
 
           {/* File Upload */}
-          <label className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border-2 border-dashed border-black bg-slate-50 hover:bg-purple-50 cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-            <Upload className="w-4 h-4 text-purple-700" />
-            <span className="text-xs font-bold text-gray-800">
+          <label className="flex items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-dashed border-black bg-slate-50 hover:bg-purple-50 cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <Upload className="w-5 h-5 text-purple-700" />
+            <span className="text-xs sm:text-sm font-bold text-gray-800">
               {isSavingResume
                 ? 'Parsing Resume Document...'
                 : resumeFileName
-                ? `Loaded: ${resumeFileName} — click to change`
-                : 'Upload resume document (.pdf, .docx, .doc, or paste below)'}
+                ? `Loaded: ${resumeFileName} (Click to replace file)`
+                : 'Upload resume document (.pdf, .docx, .doc)'}
             </span>
             <input
               type="file"
-              accept=".pdf,.docx,.doc,.txt,.md"
+              accept=".pdf,.docx,.doc"
               className="hidden"
               onChange={handleResumeFileUpload}
               disabled={isSavingResume}
             />
           </label>
 
-          {/* Paste area */}
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase text-black tracking-wider">Resume Text</label>
-            <textarea
-              value={resumeText}
-              onChange={(e) => setResumeText(e.target.value)}
-              placeholder="Paste your resume here — name, experience, skills, projects, education..."
-              rows={8}
-              className="w-full p-3 text-sm font-medium rounded-xl border-2 border-black bg-white text-black placeholder-gray-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-purple-500 resize-y font-mono"
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-1">
-            {resumeSaveMsg && (
-              <span className={`text-xs font-bold flex items-center gap-1.5 ${resumeSaveMsg.includes('success') ? 'text-emerald-700' : 'text-rose-700'}`}>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                {resumeSaveMsg}
-              </span>
-            )}
-            <div className="ml-auto">
-              <button
-                type="button"
-                onClick={handleSaveResume}
-                disabled={isSavingResume || !resumeText.trim()}
-                className="flex items-center gap-2 py-2.5 px-6 rounded-xl border-2 border-black font-black text-sm text-white bg-purple-600 hover:bg-purple-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all disabled:opacity-50"
-              >
-                {isSavingResume ? 'Saving...' : 'Save Resume'}
-              </button>
+          {resumeSaveMsg && (
+            <div className={`text-xs font-bold flex items-center gap-1.5 p-3 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+              resumeSaveMsg.includes('success') ? 'bg-emerald-50 text-emerald-900' : 'bg-rose-50 text-rose-900'
+            }`}>
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{resumeSaveMsg}</span>
             </div>
-          </div>
+          )}
+
+          {resumeFileName && !resumeSaveMsg && (
+            <div className="flex items-center gap-2 text-xs font-bold text-purple-900 bg-purple-50 border-2 border-black p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <CheckCircle2 className="w-4 h-4 text-purple-700 shrink-0" />
+              <span>Resume document parsed & active for calibrated interview question generation.</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

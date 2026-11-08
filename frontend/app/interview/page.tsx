@@ -147,6 +147,42 @@ export default function InterviewPage() {
     setTextAnswer('');
   }, [currentQuestionIndex, resetCodeRunner]);
 
+  const existingTurns = interview?.turns || [];
+  const followupsUsed = existingTurns.filter(
+    (t) => t.speaker === 'ai' && t.type === 'followup' && t.questionRef === currentQuestion?.questionId
+  ).length;
+  const hintsUsed = existingTurns.filter(
+    (t) => t.speaker === 'ai' && t.type === 'hint' && t.questionRef === currentQuestion?.questionId
+  ).length;
+  const hintsRemaining = Math.max(0, 2 - hintsUsed);
+  const followupsRemaining = Math.max(0, 2 - followupsUsed);
+
+  // Check if there is an active pending follow-up question asked by the AI for the current question
+  const currentQuestionTurns = existingTurns.filter(
+    (t) => t.questionRef === currentQuestion?.questionId
+  );
+  const lastTurn = currentQuestionTurns[currentQuestionTurns.length - 1];
+  const hasActiveFollowup = Boolean(lastTurn && lastTurn.speaker === 'ai' && lastTurn.type === 'followup');
+  const activeFollowupText = hasActiveFollowup ? lastTurn?.text : null;
+
+  // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing,
+  // UNLESS the AI has just asked a follow-up question (e.g. TC/SC question) that requires the candidate to speak!
+  useEffect(() => {
+    if (isCodingQuestion && !hasActiveFollowup) {
+      if (voiceInterviewer.isVoiceActive) {
+        voiceInterviewer.stopListening();
+      }
+    } else if (
+      interview?.status === 'active' &&
+      interview?.config?.voice &&
+      voiceInterviewer.isSupported &&
+      !voiceInterviewer.isVoiceActive
+    ) {
+      voiceInterviewer.startListening();
+      setAnswerMode('voice');
+    }
+  }, [isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
+
   const handleRunCode = async () => {
     await executeCode(codeContent, selectedCodingLanguage, codingProblemDetails);
   };
@@ -262,41 +298,6 @@ export default function InterviewPage() {
     );
   }
 
-  const existingTurns = interview.turns || [];
-  const followupsUsed = existingTurns.filter(
-    (t) => t.speaker === 'ai' && t.type === 'followup' && t.questionRef === currentQuestion?.questionId
-  ).length;
-  const hintsUsed = existingTurns.filter(
-    (t) => t.speaker === 'ai' && t.type === 'hint' && t.questionRef === currentQuestion?.questionId
-  ).length;
-  const hintsRemaining = Math.max(0, 2 - hintsUsed);
-  const followupsRemaining = Math.max(0, 2 - followupsUsed);
-
-  // Check if there is an active pending follow-up question asked by the AI for the current question
-  const currentQuestionTurns = existingTurns.filter(
-    (t) => t.questionRef === currentQuestion?.questionId
-  );
-  const lastTurn = currentQuestionTurns[currentQuestionTurns.length - 1];
-  const hasActiveFollowup = Boolean(lastTurn && lastTurn.speaker === 'ai' && lastTurn.type === 'followup');
-  const activeFollowupText = hasActiveFollowup ? lastTurn?.text : null;
-
-  // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing,
-  // UNLESS the AI has just asked a follow-up question (e.g. TC/SC question) that requires the candidate to speak!
-  useEffect(() => {
-    if (isCodingQuestion && !hasActiveFollowup) {
-      if (voiceInterviewer.isVoiceActive) {
-        voiceInterviewer.stopListening();
-      }
-    } else if (
-      interview?.status === 'active' &&
-      interview?.config?.voice &&
-      voiceInterviewer.isSupported &&
-      !voiceInterviewer.isVoiceActive
-    ) {
-      voiceInterviewer.startListening();
-      setAnswerMode('voice');
-    }
-  }, [isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
   const isLastQuestion = currentQuestionIndex >= (interview?.questions?.length || 1) - 1;
   const isQuestionAnswered = Boolean(currentQuestion?.feedback || currentQuestion?.score != null);
 
