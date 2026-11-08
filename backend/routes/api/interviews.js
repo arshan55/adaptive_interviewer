@@ -682,9 +682,25 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
         }
 
         if (nextQuestionObj) {
+          // Dynamic conversational transition referencing previous answer
+          let questionPromptText = nextQuestionObj.questionText;
+          if (text && text.length > 20) {
+            const shortTopic = question?.topic || 'that';
+            const transitionPhrases = [
+              `Building on what you just shared regarding ${shortTopic}, `,
+              `Interesting points on ${shortTopic}. Moving forward: `,
+              `Understood. Connecting to that, `,
+            ];
+            const randomTransition = transitionPhrases[Math.floor(Math.random() * transitionPhrases.length)];
+            // Prepend contextual transition if question doesn't already start with a transition
+            if (!questionPromptText.toLowerCase().startsWith('building') && !questionPromptText.toLowerCase().startsWith('moving')) {
+              questionPromptText = `${randomTransition}${questionPromptText.charAt(0).toLowerCase() + questionPromptText.slice(1)}`;
+            }
+          }
+
           const newQuestion = {
             questionId: nextQuestionObj.questionId || null,
-            questionText: nextQuestionObj.questionText,
+            questionText: questionPromptText,
             answerText: null,
             feedback: null,
             score: null,

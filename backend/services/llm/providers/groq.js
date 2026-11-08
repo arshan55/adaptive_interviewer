@@ -12,10 +12,28 @@ const OpenAI = require('openai');
 
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
-function getClient() {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return null;
-  return new OpenAI({ apiKey: key, baseURL: GROQ_BASE_URL });
+// Support comma-separated keys for pool rotation: GROQ_API_KEYS="key1,key2" or GROQ_API_KEY="key1"
+function getKeys() {
+  const raw = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
+  return raw
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+let keyIndex = 0;
+
+function getNextClient(customApiKey = null) {
+  if (customApiKey) {
+    return new OpenAI({ apiKey: customApiKey, baseURL: GROQ_BASE_URL });
+  }
+
+  const keys = getKeys();
+  if (keys.length === 0) return null;
+
+  const selectedKey = keys[keyIndex % keys.length];
+  keyIndex = (keyIndex + 1) % keys.length;
+  return new OpenAI({ apiKey: selectedKey, baseURL: GROQ_BASE_URL });
 }
 
 function resolveModel(task) {
@@ -33,10 +51,11 @@ function resolveModel(task) {
  * @param {boolean} [opts.json]       Request JSON output
  * @param {number} [opts.maxTokens]   Max tokens (default 400)
  * @param {number} [opts.temperature] Temperature (default 0.2)
+ * @param {string} [opts.apiKey]      Optional BYOK user API key
  * @returns {Promise<string>} Raw text response
  */
-async function generate({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2 }) {
-  const client = getClient();
+async function generate({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
+  const client = getNextClient(apiKey);
   if (!client) {
     const err = new Error('GROQ_API_KEY not configured — skipping Groq provider');
     err.skipProvider = true;
@@ -69,8 +88,8 @@ async function generate({ task = 'fast', messages, json = false, maxTokens = 400
  * @param {object} opts  Same as generate()
  * @yields {string} Text delta chunks
  */
-async function* stream({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2 }) {
-  const client = getClient();
+async function* stream({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
+  const client = getNextClient(apiKey);
   if (!client) {
     const err = new Error('GROQ_API_KEY not configured — skipping Groq provider');
     err.skipProvider = true;

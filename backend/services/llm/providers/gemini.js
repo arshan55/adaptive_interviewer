@@ -9,10 +9,28 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-function getClient() {
-  const key = process.env.GOOGLE_AI_API_KEY;
-  if (!key) return null;
-  return new GoogleGenerativeAI(key);
+// Support comma-separated keys for pool rotation: GOOGLE_AI_API_KEYS="key1,key2" or GOOGLE_AI_API_KEY="key1"
+function getKeys() {
+  const raw = process.env.GOOGLE_AI_API_KEYS || process.env.GOOGLE_AI_API_KEY || '';
+  return raw
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+let keyIndex = 0;
+
+function getNextClient(customApiKey = null) {
+  if (customApiKey) {
+    return new GoogleGenerativeAI(customApiKey);
+  }
+
+  const keys = getKeys();
+  if (keys.length === 0) return null;
+
+  const selectedKey = keys[keyIndex % keys.length];
+  keyIndex = (keyIndex + 1) % keys.length;
+  return new GoogleGenerativeAI(selectedKey);
 }
 
 function resolveModel(task) {
@@ -59,8 +77,8 @@ function convertMessages(messages) {
  * @param {number} [opts.temperature] Temperature (default 0.2)
  * @returns {Promise<string>} Raw text response
  */
-async function generate({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2 }) {
-  const client = getClient();
+async function generate({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
+  const client = getNextClient(apiKey);
   if (!client) {
     const err = new Error('GOOGLE_AI_API_KEY not configured — skipping Gemini provider');
     err.skipProvider = true;
@@ -96,8 +114,8 @@ async function generate({ task = 'fast', messages, json = false, maxTokens = 400
  * @param {object} opts  Same as generate()
  * @yields {string} Text delta chunks
  */
-async function* stream({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2 }) {
-  const client = getClient();
+async function* stream({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
+  const client = getNextClient(apiKey);
   if (!client) {
     const err = new Error('GOOGLE_AI_API_KEY not configured — skipping Gemini provider');
     err.skipProvider = true;

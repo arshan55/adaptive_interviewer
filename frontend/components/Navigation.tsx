@@ -91,6 +91,12 @@ const Navigation = () => {
         {isLoggedIn ? (
           <>
             <Link
+              href="/settings"
+              className="px-3 sm:px-4 py-2 bg-white rounded-xl border-2 border-black text-black font-bold text-xs sm:text-sm hover:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+            >
+              Settings
+            </Link>
+            <Link
               href="/profile"
               className="w-10 h-10 bg-yellow-200 border-2 border-black rounded-xl flex items-center justify-center hover:bg-yellow-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
               title="Candidate Profile"

@@ -52,6 +52,14 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  customGroqKey: {
+    type: String,
+    default: null
+  },
+  customGeminiKey: {
+    type: String,
+    default: null
+  },
   date: {
     type: Date,
     default: Date.now

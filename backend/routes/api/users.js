@@ -192,4 +192,50 @@ router.get('/resume', auth, async (req, res) => {
   }
 });
 
+// @route PUT api/users/settings
+// @desc Update user settings (e.g. custom BYOK API keys)
+// @access Private
+router.put('/settings', auth, async (req, res) => {
+  try {
+    const { customGroqKey, customGeminiKey } = req.body;
+    const update = {};
+    if (customGroqKey !== undefined) update.customGroqKey = customGroqKey ? customGroqKey.trim() : null;
+    if (customGeminiKey !== undefined) update.customGeminiKey = customGeminiKey ? customGeminiKey.trim() : null;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: update },
+      { new: true }
+    ).select('customGroqKey customGeminiKey name email');
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json({
+      msg: 'Settings saved',
+      customGroqKey: user.customGroqKey,
+      customGeminiKey: user.customGeminiKey,
+    });
+  } catch (err) {
+    console.error('Error updating settings:', err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route GET api/users/settings
+// @desc Get user settings
+// @access Private
+router.get('/settings', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('customGroqKey customGeminiKey');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    res.json({
+      customGroqKey: user.customGroqKey || '',
+      customGeminiKey: user.customGeminiKey || '',
+    });
+  } catch (err) {
+    console.error('Error getting settings:', err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 module.exports = router; 
