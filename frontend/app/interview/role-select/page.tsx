@@ -23,48 +23,56 @@ const roles = [
     title: 'Software Engineer',
     description: 'General software engineering, system design, and algorithms',
     isTechnical: true,
+    hasDSAQuestions: true,
   },
   {
     id: 'frontend-developer',
     title: 'Frontend Developer',
     description: 'Frontend architecture, UI/UX, modern JS/TS, and web APIs',
     isTechnical: true,
+    hasDSAQuestions: true,
   },
   {
     id: 'backend-developer',
     title: 'Backend Developer',
     description: 'Server architecture, databases, APIs, and scalability',
     isTechnical: true,
+    hasDSAQuestions: true,
   },
   {
     id: 'data-scientist',
     title: 'Data Scientist',
     description: 'Data analysis, machine learning algorithms, and statistics',
     isTechnical: true,
+    hasDSAQuestions: false,
   },
   {
     id: 'product-manager',
     title: 'Product Manager',
     description: 'Product strategy, execution, system trade-offs, and metrics',
     isTechnical: false,
+    hasDSAQuestions: false,
   },
   {
     id: 'devops-engineer',
     title: 'DevOps Engineer',
     description: 'CI/CD, cloud infrastructure, container orchestration, and security',
     isTechnical: true,
+    hasDSAQuestions: true,
   },
   {
     id: 'ai-engineer',
     title: 'AI Engineer',
     description: 'LLM agents, RAG, prompt engineering, model fine-tuning, and vector databases',
     isTechnical: true,
+    hasDSAQuestions: false,
   },
   {
     id: 'ml-engineer',
     title: 'ML Engineer',
     description: 'Machine learning pipelines, MLOps, deep learning architectures, and model training',
     isTechnical: true,
+    hasDSAQuestions: false,
   },
 ];
 
@@ -215,9 +223,9 @@ export default function RoleSelectPage() {
 
   const activeRole = roles.find((r) => r.id === selectedRole);
 
-  // Auto-switch mode if non-technical role selected with DSA mode
+  // Auto-switch mode if role doesn't have DSA questions but DSA mode selected
   useEffect(() => {
-    if (activeRole && !activeRole.isTechnical && interviewMode === 'dsa') {
+    if (activeRole && !activeRole.hasDSAQuestions && interviewMode === 'dsa') {
       setInterviewMode('mixed');
     }
   }, [activeRole, interviewMode]);
@@ -253,7 +261,7 @@ export default function RoleSelectPage() {
       programmingLanguage: activeRole?.isTechnical ? selectedLanguage : undefined,
       config: {
         mode: interviewMode,
-        patterns: (interviewMode === 'hr' || !activeRole?.isTechnical) ? [] : selectedPatterns,
+        patterns: (interviewMode === 'hr' || !activeRole?.hasDSAQuestions) ? [] : selectedPatterns,
         difficulty,
         durationMin,
         maxQuestions,
@@ -378,7 +386,7 @@ export default function RoleSelectPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            {[
+{[
               {
                 id: 'mixed',
                 title: 'Mixed (HR + DSA)',
@@ -392,7 +400,7 @@ export default function RoleSelectPage() {
                 desc: 'Algorithm problems with live code editor and test-case execution.',
                 badge: 'Technical',
                 color: 'bg-emerald-50 border-emerald-400',
-                requiresTechnical: true,
+                requiresDSAQuestions: true,
               },
               {
                 id: 'hr',
@@ -403,7 +411,7 @@ export default function RoleSelectPage() {
               },
             ].map((mode) => {
               const active = interviewMode === mode.id;
-              const isDisabled = mode.requiresTechnical && !activeRole?.isTechnical;
+              const isDisabled = mode.requiresDSAQuestions && !activeRole?.hasDSAQuestions;
               if (isDisabled) return null;
               return (
                 <div
@@ -431,7 +439,7 @@ export default function RoleSelectPage() {
           </div>
 
           {/* DSA Pattern selection (active when mode includes technical/dsa) */}
-          {interviewMode !== 'hr' && activeRole?.isTechnical && (
+          {interviewMode !== 'hr' && activeRole?.hasDSAQuestions && (
             <div className="pt-2 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
