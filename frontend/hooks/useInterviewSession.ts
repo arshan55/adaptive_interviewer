@@ -154,7 +154,7 @@ export function useInterviewSession(interviewId: string | null) {
 
   const isCodingQuestion = Boolean(
     currentQuestion?.isCodingProblem ||
-      currentQuestion?.questionText?.startsWith('[CODING_PROBLEM]')
+    currentQuestion?.questionText?.startsWith('[CODING_PROBLEM]')
   );
 
   // Fetch coding problem details when active question changes
@@ -172,7 +172,7 @@ export function useInterviewSession(interviewId: string | null) {
       .then((data) => {
         if (data) setCodingProblemDetails(data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [isCodingQuestion, currentQuestion?.questionId]);
 
   // Poll for completed report when status is 'completing'
@@ -224,10 +224,10 @@ export function useInterviewSession(interviewId: string | null) {
             language: opts.language,
             metrics: opts.metrics
               ? {
-                  wpm: opts.metrics.wpm,
-                  fillerWordsCount: opts.metrics.fillerWordsCount,
-                  responseMs: opts.metrics.responseMs,
-                }
+                wpm: opts.metrics.wpm,
+                fillerWordsCount: opts.metrics.fillerWordsCount,
+                responseMs: opts.metrics.responseMs,
+              }
               : undefined,
           },
           {
@@ -253,7 +253,7 @@ export function useInterviewSession(interviewId: string | null) {
                   localStorage.removeItem('selectedRole');
                   localStorage.removeItem('activeInterviewId');
                 }
-                finishInterview(interview._id).catch(() => {});
+                finishInterview(interview._id).catch(() => { });
               }
             },
             onError: (err) => {

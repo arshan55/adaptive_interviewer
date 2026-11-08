@@ -150,6 +150,7 @@ export default function InterviewPage() {
   useEffect(() => {
     resetCodeRunner();
     setTextAnswer('');
+    setCodeContent('');
   }, [currentQuestionIndex, resetCodeRunner]);
 
   const existingTurns = interview?.turns || [];
@@ -194,6 +195,7 @@ export default function InterviewPage() {
 
   const handleSubmitCode = async () => {
     if (!codeContent.trim()) return;
+    voiceInterviewer.stopListening();
     await submitTurn({
       text: codeContent,
       code: codeContent,
