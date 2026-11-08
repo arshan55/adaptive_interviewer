@@ -181,6 +181,25 @@ html.dark,
   color: #DDD8CB !important;
 }
 
+/* Remove decorative background images and white overlays in dark mode */
+.dark [style*="background-image"],
+.dark [style*="backgroundImage"] {
+  background-image: none !important;
+  background-color: #121110 !important;
+}
+
+.dark .min-h-screen {
+  background-color: #121110 !important;
+}
+
+/* Hide light mode semi-transparent backdrop overlays */
+.dark .absolute.inset-0.bg-white\/80,
+.dark .absolute.inset-0.bg-white\/75,
+.dark .absolute.inset-0.bg-white\/70,
+.dark .absolute.inset-0.bg-white\/60 {
+  display: none !important;
+}
+
 /* 1. Canvas & Structure */
 .dark nav,
 .dark header.bg-white,
