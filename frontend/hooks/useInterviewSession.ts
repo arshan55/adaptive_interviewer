@@ -98,11 +98,32 @@ export function useInterviewSession(interviewId: string | null) {
           setCurrentQuestionIndex(unansweredIdx);
         }
       } else if (typeof window !== 'undefined') {
+        // If an active session is already saved in localStorage, resume it instead of creating a brand new duplicate interview
+        const existingSessionId = localStorage.getItem('activeInterviewId');
+        if (existingSessionId) {
+          try {
+            const data = await getInterviewDetails(existingSessionId);
+            if (data && (data.status === 'active' || data.status === 'completing' || data.status === 'completed')) {
+              setInterview(data as unknown as InterviewSessionState);
+              const unansweredIdx = data.questions?.findIndex((q: any) => q.answerText == null && q.codeAnswer == null);
+              if (unansweredIdx !== -1 && typeof unansweredIdx === 'number') {
+                setCurrentQuestionIndex(unansweredIdx);
+              }
+              return;
+            }
+          } catch {
+            localStorage.removeItem('activeInterviewId');
+          }
+        }
+
         const roleData = localStorage.getItem('selectedRole');
         if (roleData) {
           const parsed = JSON.parse(roleData);
           const data = await startInterview(parsed);
           setInterview(data as unknown as InterviewSessionState);
+          if (data?._id) {
+            localStorage.setItem('activeInterviewId', data._id);
+          }
           setCurrentQuestionIndex(0);
         } else {
           router.push('/interview/role-select');
@@ -149,10 +170,11 @@ export function useInterviewSession(interviewId: string | null) {
 
   // Poll for completed report when status is 'completing'
   useEffect(() => {
-    if (interview?.status === 'completing' && interviewId) {
+    const activeId = interviewId || interview?._id;
+    if (interview?.status === 'completing' && activeId) {
       pollingRef.current = setInterval(async () => {
         try {
-          const updated: any = await getInterviewDetails(interviewId);
+          const updated: any = await getInterviewDetails(activeId);
           if (updated.status === 'completed' || updated.report) {
             setInterview(updated as unknown as InterviewSessionState);
             if (pollingRef.current) clearInterval(pollingRef.current);
@@ -160,13 +182,13 @@ export function useInterviewSession(interviewId: string | null) {
         } catch {
           // ignore transient polling errors
         }
-      }, 1000);
+      }, 1500);
     }
 
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [interview?.status, interviewId]);
+  }, [interview?.status, interview?._id, interviewId]);
 
   // Submit streaming adaptive turn
   const submitTurn = useCallback(
@@ -219,6 +241,11 @@ export function useInterviewSession(interviewId: string | null) {
                   setCurrentQuestionIndex((prev) => prev + 1);
                 }
               } else if (completionData.action === 'wrap_up') {
+                // Clear session keys so a page refresh does NOT restart the interview after wrap-up
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('selectedRole');
+                  localStorage.removeItem('activeInterviewId');
+                }
                 finishInterview(interview._id).catch(() => {});
               }
             },
@@ -247,6 +274,11 @@ export function useInterviewSession(interviewId: string | null) {
       await finishInterview(interview._id);
       const updated = await getInterviewDetails(interview._id);
       setInterview(updated as unknown as InterviewSessionState);
+      // Clear session keys so a page refresh does NOT restart the interview
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('selectedRole');
+        localStorage.removeItem('activeInterviewId');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to complete interview');
     } finally {

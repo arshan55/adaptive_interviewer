@@ -26,9 +26,10 @@ import { ChatTranscript } from './ChatTranscript';
 
 interface ReportViewProps {
   interview: InterviewSessionState;
+  onInterviewUpdate?: (updated: InterviewSessionState) => void;
 }
 
-export const ReportView: React.FC<ReportViewProps> = ({ interview }) => {
+export const ReportView: React.FC<ReportViewProps> = ({ interview, onInterviewUpdate }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'report' | 'questions' | 'transcript'>('report');
   const [expandedQuestionIdx, setExpandedQuestionIdx] = useState<number | null>(0);
@@ -96,8 +97,11 @@ export const ReportView: React.FC<ReportViewProps> = ({ interview }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Force page reload to get fresh data from parent
-        window.location.reload();
+        if (data.status === 'completed' || data.report) {
+          // Navigate to the dedicated report page so the interview page
+          // is not re-instantiated (which would restart it).
+          router.push(`/interview/${interview._id}`);
+        }
       }
     } catch {
       // ignore

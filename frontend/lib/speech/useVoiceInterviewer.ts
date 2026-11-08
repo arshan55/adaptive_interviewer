@@ -238,7 +238,7 @@ export function useVoiceInterviewer({
       };
 
       rec.onresult = (event: any) => {
-        if (isTtsSpeakingRef.current || micPausedForTtsRef.current) return;
+        if (isTtsSpeakingRef.current || micPausedForTtsRef.current || ttsQueueRef.current.length > 0) return;
 
         let interim = '';
         let newFinalChunk = '';
@@ -347,8 +347,13 @@ export function useVoiceInterviewer({
     if (ttsQueueRef.current.length === 0) {
       isTtsSpeakingRef.current = false;
       aiFinishedSpeakingTimeRef.current = Date.now();
-      setVoiceStatus('listening');
-      resumeRecognition();
+      // Add a slight cooldown (500ms) after speech ends before turning mic back on to avoid acoustic echo/reverb loop
+      setTimeout(() => {
+        if (!isTtsSpeakingRef.current && ttsQueueRef.current.length === 0) {
+          setVoiceStatus('listening');
+          resumeRecognition();
+        }
+      }, 500);
       return;
     }
 
@@ -359,6 +364,7 @@ export function useVoiceInterviewer({
     }
 
     isTtsSpeakingRef.current = true;
+    pauseRecognition();
     setVoiceStatus('speaking');
 
     const utterance = new SpeechSynthesisUtterance(nextSentence);
@@ -389,7 +395,7 @@ export function useVoiceInterviewer({
     };
 
     window.speechSynthesis.speak(utterance);
-  }, [resumeRecognition]);
+  }, [pauseRecognition, resumeRecognition]);
 
   // Enqueue a completed sentence to speak
   const enqueueTtsSentence = useCallback(

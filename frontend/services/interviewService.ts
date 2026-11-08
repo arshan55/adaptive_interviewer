@@ -53,6 +53,8 @@ export interface InterviewResult {
   date: string;
   overallFeedback?: string | null;
   overallScore?: number | null;
+  status?: 'active' | 'completing' | 'completed';
+  report?: any;
 }
 
 export interface StartInterviewPayload {

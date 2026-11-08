@@ -721,20 +721,9 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
 
             const isCoding = !!nextQuestionObj.isCodingProblem;
 
-            // Only prepend conversational transitions to behavioral/verbal questions, NOT coding problem statements
-            if (!isCoding && text && text.length > 20) {
-              const shortTopic = question?.topic || 'that';
-              const transitionPhrases = [
-                `Building on what you just shared regarding ${shortTopic}, `,
-                `Interesting points on ${shortTopic}. Moving forward: `,
-                `Understood. Connecting to that, `,
-              ];
-              const randomTransition = transitionPhrases[Math.floor(Math.random() * transitionPhrases.length)];
-              if (!cleanQuestionPrompt.toLowerCase().startsWith('building') && !cleanQuestionPrompt.toLowerCase().startsWith('moving')) {
-                cleanQuestionPrompt = `${randomTransition}${cleanQuestionPrompt.charAt(0).toLowerCase() + cleanQuestionPrompt.slice(1)}`;
-              }
-            }
-
+            // Notice: The AI interviewer already responds with conversational feedback/acknowledgment
+            // (e.g. decision.message) when evaluating candidate turns. To avoid repetitive double-acknowledgments
+            // ("Understood...", "Interesting points..."), keep the new question's prompt statement clean and direct.
             const newQuestion = {
               questionId: nextQuestionObj.questionId || null,
               title: nextQuestionObj.title || null,
