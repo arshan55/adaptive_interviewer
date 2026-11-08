@@ -54,7 +54,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+      <body className="font-sans bg-slate-50 dark:!bg-[#121110] text-slate-900 dark:!text-[#DDD8CB] antialiased min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
         <Navigation />
         <PageTransition>{children}</PageTransition>
       </body>

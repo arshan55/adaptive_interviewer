@@ -19,18 +19,37 @@ function getKeys() {
 }
 
 let keyIndex = 0;
+// Map to track per-key cooldowns: key -> expiration timestamp ms
+const keyCooldowns = new Map();
+
+function markKeyCooldown(key, cooldownMs = 60000) {
+  if (!key) return;
+  keyCooldowns.set(key, Date.now() + cooldownMs);
+}
 
 function getNextClient(customApiKey = null) {
   if (customApiKey) {
-    return new GoogleGenerativeAI(customApiKey);
+    return { client: new GoogleGenerativeAI(customApiKey), key: customApiKey };
   }
 
   const keys = getKeys();
   if (keys.length === 0) return null;
 
-  const selectedKey = keys[keyIndex % keys.length];
-  keyIndex = (keyIndex + 1) % keys.length;
-  return new GoogleGenerativeAI(selectedKey);
+  const now = Date.now();
+  for (let i = 0; i < keys.length; i++) {
+    const candidateIdx = (keyIndex + i) % keys.length;
+    const candidateKey = keys[candidateIdx];
+    const cooldownUntil = keyCooldowns.get(candidateKey) || 0;
+
+    if (now >= cooldownUntil) {
+      keyIndex = (candidateIdx + 1) % keys.length;
+      return { client: new GoogleGenerativeAI(candidateKey), key: candidateKey };
+    }
+  }
+
+  const sorted = [...keys].sort((a, b) => (keyCooldowns.get(a) || 0) - (keyCooldowns.get(b) || 0));
+  const fallbackKey = sorted[0];
+  return { client: new GoogleGenerativeAI(fallbackKey), key: fallbackKey };
 }
 
 function resolveModel(task) {
@@ -78,12 +97,13 @@ function convertMessages(messages) {
  * @returns {Promise<string>} Raw text response
  */
 async function generate({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
-  const client = getNextClient(apiKey);
-  if (!client) {
+  const next = getNextClient(apiKey);
+  if (!next) {
     const err = new Error('GOOGLE_AI_API_KEY not configured — skipping Gemini provider');
     err.skipProvider = true;
     throw err;
   }
+  const { client, key } = next;
 
   const modelName = resolveModel(task);
   const generationConfig = {
@@ -99,14 +119,21 @@ async function generate({ task = 'fast', messages, json = false, maxTokens = 400
   const history = geminiMessages.slice(0, -1);
   const lastMsg = geminiMessages[geminiMessages.length - 1];
 
-  const chat = model.startChat({ history });
-  const result = await chat.sendMessage(lastMsg.parts);
-  const text = result?.response?.text();
+  try {
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(lastMsg.parts);
+    const text = result?.response?.text();
 
-  if (typeof text !== 'string') {
-    throw new Error('Gemini returned unexpected response shape');
+    if (typeof text !== 'string') {
+      throw new Error('Gemini returned unexpected response shape');
+    }
+    return text;
+  } catch (err) {
+    if (err.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED') || err?.message?.includes('quota')) {
+      markKeyCooldown(key, 60000);
+    }
+    throw err;
   }
-  return text;
 }
 
 /**
@@ -115,12 +142,13 @@ async function generate({ task = 'fast', messages, json = false, maxTokens = 400
  * @yields {string} Text delta chunks
  */
 async function* stream({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
-  const client = getNextClient(apiKey);
-  if (!client) {
+  const next = getNextClient(apiKey);
+  if (!next) {
     const err = new Error('GOOGLE_AI_API_KEY not configured — skipping Gemini provider');
     err.skipProvider = true;
     throw err;
   }
+  const { client, key } = next;
 
   const modelName = resolveModel(task);
   const generationConfig = {
@@ -134,9 +162,18 @@ async function* stream({ task = 'fast', messages, json = false, maxTokens = 400,
 
   const history = geminiMessages.slice(0, -1);
   const lastMsg = geminiMessages[geminiMessages.length - 1];
-  const chat = model.startChat({ history });
 
-  const streamResult = await chat.sendMessageStream(lastMsg.parts);
+  let streamResult;
+  try {
+    const chat = model.startChat({ history });
+    streamResult = await chat.sendMessageStream(lastMsg.parts);
+  } catch (err) {
+    if (err.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED') || err?.message?.includes('quota')) {
+      markKeyCooldown(key, 60000);
+    }
+    throw err;
+  }
+
   for await (const chunk of streamResult.stream) {
     const delta = chunk?.text?.();
     if (delta) yield delta;

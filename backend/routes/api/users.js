@@ -3,8 +3,17 @@ const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 const User = require('../../models/User');
 const auth = require('../../middleware/auth');
+
+// Multer memory storage configuration for file parsing (10 MB max)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 // @route POST api/users
 // @desc Register user
@@ -124,6 +133,72 @@ router.put(
     }
   }
 );
+
+// @route POST api/users/resume/upload
+// @desc Parse and save resume from PDF, Word (.docx), or text files
+// @access Private
+router.post('/resume/upload', [auth, upload.single('resumeFile')], async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ msg: 'No resume file uploaded' });
+    }
+
+    const { originalname, mimetype, buffer } = req.file;
+    const lowerName = originalname.toLowerCase();
+    let extractedText = '';
+
+    if (lowerName.endsWith('.pdf') || mimetype === 'application/pdf') {
+      const pdfData = await pdfParse(buffer);
+      extractedText = (pdfData.text || '').trim();
+    } else if (
+      lowerName.endsWith('.docx') ||
+      lowerName.endsWith('.doc') ||
+      mimetype.includes('wordprocessingml') ||
+      mimetype.includes('msword')
+    ) {
+      const docxData = await mammoth.extractRawText({ buffer });
+      extractedText = (docxData.value || '').trim();
+    } else if (
+      lowerName.endsWith('.txt') ||
+      lowerName.endsWith('.md') ||
+      mimetype.startsWith('text/')
+    ) {
+      extractedText = buffer.toString('utf-8').trim();
+    } else {
+      // Fallback: try utf-8 string
+      extractedText = buffer.toString('utf-8').trim();
+    }
+
+    if (!extractedText || extractedText.length < 20) {
+      return res.status(400).json({
+        msg: 'Could not extract substantive text from the uploaded document. Please check the file formatting or paste the text directly.',
+      });
+    }
+
+    // Persist to user profile
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $set: {
+          resumeText: extractedText,
+          resumeFileName: originalname,
+          resumeUpdatedAt: new Date(),
+        },
+      },
+      { new: true }
+    ).select('-password');
+
+    res.json({
+      msg: 'Resume uploaded and parsed successfully',
+      resumeText: user.resumeText,
+      resumeFileName: user.resumeFileName,
+      resumeUpdatedAt: user.resumeUpdatedAt,
+    });
+  } catch (err) {
+    console.error('Error parsing uploaded resume:', err);
+    res.status(500).json({ msg: 'Failed to parse resume document', error: err.message });
+  }
+});
 
 // @route POST api/users/resume
 // @desc Save user resume text and metadata

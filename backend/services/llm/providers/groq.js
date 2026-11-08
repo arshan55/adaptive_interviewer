@@ -22,18 +22,39 @@ function getKeys() {
 }
 
 let keyIndex = 0;
+// Map to track per-key cooldowns: key -> expiration timestamp ms
+const keyCooldowns = new Map();
+
+function markKeyCooldown(key, cooldownMs = 60000) {
+  if (!key) return;
+  keyCooldowns.set(key, Date.now() + cooldownMs);
+}
 
 function getNextClient(customApiKey = null) {
   if (customApiKey) {
-    return new OpenAI({ apiKey: customApiKey, baseURL: GROQ_BASE_URL });
+    return { client: new OpenAI({ apiKey: customApiKey, baseURL: GROQ_BASE_URL }), key: customApiKey };
   }
 
   const keys = getKeys();
   if (keys.length === 0) return null;
 
-  const selectedKey = keys[keyIndex % keys.length];
-  keyIndex = (keyIndex + 1) % keys.length;
-  return new OpenAI({ apiKey: selectedKey, baseURL: GROQ_BASE_URL });
+  const now = Date.now();
+  // Find a healthy key that is not in cooldown
+  for (let i = 0; i < keys.length; i++) {
+    const candidateIdx = (keyIndex + i) % keys.length;
+    const candidateKey = keys[candidateIdx];
+    const cooldownUntil = keyCooldowns.get(candidateKey) || 0;
+
+    if (now >= cooldownUntil) {
+      keyIndex = (candidateIdx + 1) % keys.length;
+      return { client: new OpenAI({ apiKey: candidateKey, baseURL: GROQ_BASE_URL }), key: candidateKey };
+    }
+  }
+
+  // All keys currently in cooldown; use the one that expires soonest
+  const sorted = [...keys].sort((a, b) => (keyCooldowns.get(a) || 0) - (keyCooldowns.get(b) || 0));
+  const fallbackKey = sorted[0];
+  return { client: new OpenAI({ apiKey: fallbackKey, baseURL: GROQ_BASE_URL }), key: fallbackKey };
 }
 
 function resolveModel(task) {
@@ -55,12 +76,13 @@ function resolveModel(task) {
  * @returns {Promise<string>} Raw text response
  */
 async function generate({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
-  const client = getNextClient(apiKey);
-  if (!client) {
+  const next = getNextClient(apiKey);
+  if (!next) {
     const err = new Error('GROQ_API_KEY not configured — skipping Groq provider');
     err.skipProvider = true;
     throw err;
   }
+  const { client, key } = next;
 
   const model = resolveModel(task);
 
@@ -75,12 +97,19 @@ async function generate({ task = 'fast', messages, json = false, maxTokens = 400
     params.response_format = { type: 'json_object' };
   }
 
-  const completion = await client.chat.completions.create(params);
-  const content = completion?.choices?.[0]?.message?.content;
-  if (typeof content !== 'string') {
-    throw new Error('Groq returned unexpected response shape');
+  try {
+    const completion = await client.chat.completions.create(params);
+    const content = completion?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string') {
+      throw new Error('Groq returned unexpected response shape');
+    }
+    return content;
+  } catch (err) {
+    if (err.status === 429 || err?.message?.includes('rate limit')) {
+      markKeyCooldown(key, 60000);
+    }
+    throw err;
   }
-  return content;
 }
 
 /**
@@ -89,12 +118,13 @@ async function generate({ task = 'fast', messages, json = false, maxTokens = 400
  * @yields {string} Text delta chunks
  */
 async function* stream({ task = 'fast', messages, json = false, maxTokens = 400, temperature = 0.2, apiKey = null }) {
-  const client = getNextClient(apiKey);
-  if (!client) {
+  const next = getNextClient(apiKey);
+  if (!next) {
     const err = new Error('GROQ_API_KEY not configured — skipping Groq provider');
     err.skipProvider = true;
     throw err;
   }
+  const { client, key } = next;
 
   const model = resolveModel(task);
   const params = {
@@ -106,7 +136,15 @@ async function* stream({ task = 'fast', messages, json = false, maxTokens = 400,
   };
   if (json) params.response_format = { type: 'json_object' };
 
-  const streamResponse = await client.chat.completions.create(params);
+  let streamResponse;
+  try {
+    streamResponse = await client.chat.completions.create(params);
+  } catch (err) {
+    if (err.status === 429 || err?.message?.includes('rate limit')) {
+      markKeyCooldown(key, 60000);
+    }
+    throw err;
+  }
   for await (const chunk of streamResponse) {
     const delta = chunk?.choices?.[0]?.delta?.content;
     if (delta) yield delta;

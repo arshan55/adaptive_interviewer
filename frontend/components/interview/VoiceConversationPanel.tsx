@@ -137,6 +137,28 @@ export const VoiceConversationPanel: React.FC<VoiceConversationPanelProps> = ({
         </button>
       </div>
 
+      {/* Real-time Equalizer Waveform Bars while Candidate is Speaking */}
+      {isListening && (
+        <div className="flex items-center justify-center gap-1.5 h-8 py-1">
+          {[40, 75, 100, 60, 90, 45, 80, 100, 70, 50, 85, 95, 60, 40].map((h, i) => (
+            <motion.span
+              key={i}
+              animate={{
+                scaleY: [0.25, h / 100, 0.35],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 0.45 + (i % 5) * 0.12,
+                repeatType: 'reverse',
+                ease: 'easeInOut',
+              }}
+              className="w-1.5 rounded-full bg-rose-500 border border-black"
+              style={{ height: '24px', originY: 0.5 }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Status Cue */}
       <div className="space-y-1">
         <p className="text-xs font-black uppercase tracking-wider text-black">

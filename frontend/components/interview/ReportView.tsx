@@ -43,6 +43,46 @@ export const ReportView: React.FC<ReportViewProps> = ({ interview }) => {
     }
   };
 
+  const handleExportMarkdown = () => {
+    if (typeof window === 'undefined') return;
+    const roleTitle = interview.role
+      ? interview.role.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      : 'Software Engineer';
+
+    let md = `# Interview Assessment Report: ${roleTitle}\n\n`;
+    md += `**Date:** ${new Date(interview.date).toLocaleDateString()}\n`;
+    md += `**Overall Score:** ${overallScore}/10\n\n`;
+    md += `## Executive Summary\n${report?.summary || interview.overallFeedback || 'Completed evaluation.'}\n\n`;
+
+    md += `## Top Strengths\n`;
+    strengths.forEach((s: string) => { md += `- ${s}\n`; });
+    md += `\n## Development Areas\n`;
+    weaknesses.forEach((w: string) => { md += `- ${w}\n`; });
+
+    md += `\n## Questions Breakdown\n`;
+    (interview.questions || []).forEach((q, idx) => {
+      md += `### Question ${idx + 1}: ${q.title || q.topic || 'Question'}\n`;
+      md += `${q.questionText}\n\n`;
+      if (q.score != null) md += `**Score:** ${q.score}/10\n`;
+      if (q.signals) {
+        md += `**Signals:** Correctness: ${q.signals.correctness || 'N/A'}/10 | Depth: ${q.signals.depth || 'N/A'}/10 | Clarity: ${q.signals.clarity || 'N/A'}/10\n`;
+      }
+      if (q.answerText) md += `**Answer:** ${q.answerText}\n\n`;
+      if (q.codeAnswer) md += `\`\`\`${q.programmingLanguage || 'code'}\n${q.codeAnswer}\n\`\`\`\n\n`;
+      if (q.feedback) md += `**Feedback:** ${q.feedback}\n\n`;
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `interview-assessment-${interview.role || 'report'}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -149,9 +189,19 @@ export const ReportView: React.FC<ReportViewProps> = ({ interview }) => {
             type="button"
             onClick={handlePrint}
             className="py-2 px-3.5 rounded-xl border-2 border-black text-xs font-bold text-black bg-white hover:bg-slate-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1.5 transition-all"
+            title="Export formatted report as PDF"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>PDF Export</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportMarkdown}
+            className="py-2 px-3.5 rounded-xl border-2 border-black text-xs font-bold text-black bg-white hover:bg-slate-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1.5 transition-all"
+            title="Export markdown report"
+          >
+            <FileText className="w-3.5 h-3.5 text-blue-600" />
+            <span>Markdown</span>
           </button>
           <button
             type="button"

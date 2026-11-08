@@ -153,18 +153,48 @@ export default function RoleSelectPage() {
     fetchUserResume();
   }, []);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setResumeFileName(file.name);
+    setIsSavingResume(true);
 
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const lowerName = file.name.toLowerCase();
+
+    // If PDF or Word (.docx), upload to backend document parser endpoint
+    if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+      try {
+        const formData = new FormData();
+        formData.append('resumeFile', file);
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/users/resume/upload`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (res.ok && data.resumeText) {
+          setResumeText(data.resumeText);
+        } else {
+          setError(data.msg || 'Could not parse document. Please paste the text below.');
+        }
+      } catch (err: any) {
+        console.error('Document upload error:', err);
+        setError('Error uploading document. Please paste text directly.');
+      } finally {
+        setIsSavingResume(false);
+      }
+      return;
+    }
+
+    // For plain text / markdown files
     const reader = new FileReader();
     reader.onload = async (event) => {
       const content = event.target?.result as string;
       if (content) {
         setResumeText(content);
-        // Persist to user profile in background
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (token) {
           try {
             await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/users/resume`, {
@@ -178,6 +208,7 @@ export default function RoleSelectPage() {
           } catch {}
         }
       }
+      setIsSavingResume(false);
     };
     reader.readAsText(file);
   };
@@ -649,16 +680,21 @@ export default function RoleSelectPage() {
               </div>
 
               {/* File upload */}
-              <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-black bg-slate-50 hover:bg-purple-50 cursor-pointer transition-all">
-                <Upload className="w-4 h-4 text-gray-600" />
-                <span className="text-xs font-bold text-gray-700">
-                  {resumeFileName ? `Loaded: ${resumeFileName}` : 'Click to upload resume (.txt, .md, or paste below)'}
+              <label className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border-2 border-dashed border-black bg-slate-50 hover:bg-purple-50 cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Upload className="w-4 h-4 text-purple-700" />
+                <span className="text-xs font-bold text-gray-800">
+                  {isSavingResume
+                    ? 'Parsing Resume Document...'
+                    : resumeFileName
+                    ? `Loaded: ${resumeFileName}`
+                    : 'Upload Resume Document (.pdf, .docx, .doc, or paste below)'}
                 </span>
                 <input
                   type="file"
-                  accept=".txt,.md,.text"
+                  accept=".pdf,.docx,.doc,.txt,.md"
                   className="hidden"
                   onChange={handleFileUpload}
+                  disabled={isSavingResume}
                 />
               </label>
 

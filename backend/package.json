@@ -24,8 +24,11 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.13.0",
     "mongoose": "^8.15.1",
+    "multer": "^2.5.0",
     "openai": "^7.52.0",
+    "pdf-parse": "^2.4.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {

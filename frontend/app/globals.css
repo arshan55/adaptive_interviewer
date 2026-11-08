@@ -172,32 +172,56 @@
 
 /* Comprehensive Dark Mode Overrides - Custom Neo-Brutalist Theme */
 html.dark,
-.dark {
-  color-scheme: dark;
-}
-
+.dark,
+html.dark body,
 .dark body {
+  color-scheme: dark;
   background-color: #121110 !important;
+  background: #121110 !important;
   color: #DDD8CB !important;
 }
 
-/* Remove decorative background images and white overlays in dark mode */
+/* Remove decorative background images and white overlays in dark mode everywhere */
+html.dark [style*="background-image"],
+html.dark [style*="backgroundImage"],
+html.dark [style*="url("],
 .dark [style*="background-image"],
-.dark [style*="backgroundImage"] {
+.dark [style*="backgroundImage"],
+.dark [style*="url("] {
   background-image: none !important;
+  background: #121110 !important;
   background-color: #121110 !important;
 }
 
+html.dark div,
+html.dark main,
+html.dark section,
 .dark .min-h-screen {
+  background-color: inherit;
+}
+
+/* Force dark canvas on all page wrapper containers */
+html.dark .bg-\[\#F0F4F8\],
+.dark .bg-\[\#F0F4F8\] {
   background-color: #121110 !important;
 }
 
 /* Hide light mode semi-transparent backdrop overlays */
+html.dark .absolute.inset-0,
 .dark .absolute.inset-0.bg-white\/80,
 .dark .absolute.inset-0.bg-white\/75,
 .dark .absolute.inset-0.bg-white\/70,
-.dark .absolute.inset-0.bg-white\/60 {
+.dark .absolute.inset-0.bg-white\/60,
+.dark .absolute.inset-0.bg-white\/50,
+.dark .absolute.inset-0.opacity-20 {
   display: none !important;
+}
+
+/* Re-allow modals and scrims */
+html.dark .fixed.inset-0,
+.dark .fixed.inset-0,
+.dark .dialog-scrim {
+  display: flex !important;
 }
 
 /* 1. Canvas & Structure */
