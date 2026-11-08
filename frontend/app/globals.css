@@ -25,11 +25,20 @@
     letter-spacing: -0.011em;
   }
 
+  .dark body {
+    background-color: #090d16;
+    color: #f8fafc;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), var(--font-sans), sans-serif;
     color: #0f172a; /* slate-900 */
     font-weight: 700;
     letter-spacing: -0.025em;
+  }
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: #f8fafc;
   }
 
   h1 {
@@ -161,10 +170,71 @@
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Comprehensive Dark Mode Overrides */
+html.dark,
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+/* Invert/Darken hardcoded white cards, navs, and panels */
+.dark nav,
+.dark .bg-white,
+.dark .bg-white\/95,
+.dark .bg-white\/80,
+.dark .bg-slate-50,
+.dark .bg-\[\#F0F4F8\] {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.dark header.bg-white {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+.dark .text-black,
+.dark .text-gray-800,
+.dark .text-gray-900,
+.dark .text-gray-700 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .border-black,
+.dark .border-black\/10,
+.dark .border-black\/15,
+.dark .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+.dark .shadow-\[6px_6px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[4px_4px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[3px_3px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[2px_2px_0px_0px_rgba\(0\,0\,0\,1\)\] {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.7), 0 0 0 1px #334155 !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
 }
 
 ::-webkit-scrollbar-track {
