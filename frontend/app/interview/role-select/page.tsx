@@ -215,6 +215,13 @@ export default function RoleSelectPage() {
 
   const activeRole = roles.find((r) => r.id === selectedRole);
 
+  // Auto-switch mode if non-technical role selected with DSA mode
+  useEffect(() => {
+    if (activeRole && !activeRole.isTechnical && interviewMode === 'dsa') {
+      setInterviewMode('mixed');
+    }
+  }, [activeRole, interviewMode]);
+
   const togglePattern = (id: string) => {
     setSelectedPatterns((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
@@ -246,7 +253,7 @@ export default function RoleSelectPage() {
       programmingLanguage: activeRole?.isTechnical ? selectedLanguage : undefined,
       config: {
         mode: interviewMode,
-        patterns: interviewMode === 'hr' ? [] : selectedPatterns,
+        patterns: (interviewMode === 'hr' || !activeRole?.isTechnical) ? [] : selectedPatterns,
         difficulty,
         durationMin,
         maxQuestions,
@@ -385,6 +392,7 @@ export default function RoleSelectPage() {
                 desc: 'Algorithm problems with live code editor and test-case execution.',
                 badge: 'Technical',
                 color: 'bg-emerald-50 border-emerald-400',
+                requiresTechnical: true,
               },
               {
                 id: 'hr',
@@ -395,12 +403,16 @@ export default function RoleSelectPage() {
               },
             ].map((mode) => {
               const active = interviewMode === mode.id;
+              const isDisabled = mode.requiresTechnical && !activeRole?.isTechnical;
+              if (isDisabled) return null;
               return (
                 <div
                   key={mode.id}
-                  onClick={() => setInterviewMode(mode.id as any)}
+                  onClick={() => !isDisabled && setInterviewMode(mode.id as any)}
                   className={`cursor-pointer rounded-xl border-3 border-black p-4 transition-all ${
-                    active
+                    isDisabled
+                      ? 'bg-slate-100 opacity-50 cursor-not-allowed'
+                      : active
                       ? 'bg-yellow-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-0.5'
                       : 'bg-white hover:bg-slate-50 shadow-sm'
                   }`}
@@ -419,7 +431,7 @@ export default function RoleSelectPage() {
           </div>
 
           {/* DSA Pattern selection (active when mode includes technical/dsa) */}
-          {interviewMode !== 'hr' && (
+          {interviewMode !== 'hr' && activeRole?.isTechnical && (
             <div className="pt-2 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
