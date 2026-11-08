@@ -174,14 +174,14 @@ async function prepareTurnContext({ interview, questionIndex, text, code, langua
   // If maxQuestions is 0, session is in dynamic/continuous mode and has no preset question limit
   const isFinalQuestion = maxQuestions > 0 ? questionIndex >= maxQuestions - 1 : false;
 
+  const isCoding = !!(currentQ?.isCodingProblem || currentQ?.questionText?.startsWith('[CODING_PROBLEM]'));
+  const mode = interview.config?.mode || 'mixed';
+
   const limits = {
     followupsRemaining: isCoding ? 0 : Math.max(0, MAX_FOLLOWUPS - existingFollowups),
     hintsRemaining: Math.max(0, MAX_HINTS - existingHints),
     isFinalQuestion,
   };
-
-  const isCoding = !!(currentQ?.isCodingProblem || currentQ?.questionText?.startsWith('[CODING_PROBLEM]'));
-  const mode = interview.config?.mode || 'mixed';
 
   // Retrieve rubric if available
   let rubricText = '';
