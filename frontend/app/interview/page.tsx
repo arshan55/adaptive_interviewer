@@ -110,6 +110,26 @@ export default function InterviewPage() {
     }
   }, [interview?.status, interview?.report]);
 
+  // Track whether the current question has been spoken aloud by the AI
+  const lastSpokenQuestionIdxRef = React.useRef<number | null>(null);
+
+  // Automatically speak out the question aloud when changing to a new question
+  useEffect(() => {
+    if (
+      interview?.status === 'active' &&
+      currentQuestion?.questionText &&
+      lastSpokenQuestionIdxRef.current !== currentQuestionIndex &&
+      voiceInterviewer.isSupported
+    ) {
+      lastSpokenQuestionIdxRef.current = currentQuestionIndex;
+      // Slight delay so the user sees the transition before speaking begins
+      const timer = setTimeout(() => {
+        voiceInterviewer.speakText(currentQuestion.questionText);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [currentQuestionIndex, currentQuestion?.questionText, interview?.status, voiceInterviewer.isSupported]);
+
   // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing
   useEffect(() => {
     if (isCodingQuestion) {

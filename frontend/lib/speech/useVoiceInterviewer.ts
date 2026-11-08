@@ -38,14 +38,36 @@ export interface UseVoiceInterviewerOptions {
 function findBestHumanVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   if (!voices || voices.length === 0) return null;
 
+  // 0. Check for user-selected voice preference from Settings / LocalStorage
+  if (typeof window !== 'undefined') {
+    const savedVoice = localStorage.getItem('preferred_interviewer_voice');
+    if (savedVoice) {
+      const userMatch = voices.find((v) => v.name.toLowerCase() === savedVoice.toLowerCase());
+      if (userMatch) return userMatch;
+    }
+  }
+
   const englishVoices = voices.filter((v) => v.lang.startsWith('en'));
   if (englishVoices.length === 0) return voices[0] || null;
 
-  // 1. Microsoft Edge / Azure Natural Neural Voices (Exceptionally lifelike human inflection)
+  // 1. Google UK English Female (Natural Studio / Google) - Default priority as requested
+  const googleUkFemale = englishVoices.find(
+    (v) =>
+      v.name.includes('Google') &&
+      (v.name.includes('UK English Female') || (v.lang === 'en-GB' && v.name.toLowerCase().includes('female')))
+  );
+  if (googleUkFemale) return googleUkFemale;
+
+  const anyGoogleUk = englishVoices.find(
+    (v) => v.name.includes('Google') && (v.name.includes('UK') || v.lang === 'en-GB')
+  );
+  if (anyGoogleUk) return anyGoogleUk;
+
+  // 2. Microsoft Edge / Azure Natural Neural Voices (Natural inflection)
   const edgeNatural = englishVoices.find(
     (v) =>
       v.name.includes('(Natural)') &&
-      (v.name.includes('Jenny') || v.name.includes('Aria') || v.name.includes('Guy') || v.name.includes('Christopher'))
+      (v.name.includes('Libby') || v.name.includes('Sonia') || v.name.includes('Mia') || v.name.includes('Jenny') || v.name.includes('Aria'))
   );
   if (edgeNatural) return edgeNatural;
 
@@ -504,6 +526,7 @@ export function useVoiceInterviewer({
     stopListening,
     toggleVoiceMode,
     stopAiSpeaking,
+    speakText: enqueueTtsSentence,
     commitTurnAnswer,
     feedAiToken,
     finishAiStream,

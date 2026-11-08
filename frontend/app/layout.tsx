@@ -36,10 +36,25 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
-      style={{ colorScheme: 'light' }}
+      suppressHydrationWarning
     >
-      <link rel="icon" href="/robotic-hand.png" type="image/png" />
-      <body className="font-sans bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
+      <head>
+        <link rel="icon" href="/robotic-hand.png" type="image/png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="font-sans bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900">
         <Navigation />
         <PageTransition>{children}</PageTransition>
       </body>

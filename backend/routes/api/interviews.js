@@ -441,6 +441,11 @@ router.post('/', auth, async (req, res) => {
       return res.status(404).json({ error: 'No questions found in the Question Bank matching the criteria.' });
     }
 
+    // Dynamic AI welcome intro that breaks the ice and asks the user to introduce themselves
+    const roleTitle = role.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const companyMention = config.company ? ` at ${config.company}` : '';
+    const welcomeIntroText = `Welcome! I'll be your interviewer today for the ${roleTitle} position${companyMention}. To kick things off, could you briefly introduce yourself and share a bit about your background and recent work?`;
+
     const newInterview = new Interview({
       user: req.user.id,
       role,
@@ -452,17 +457,28 @@ router.post('/', auth, async (req, res) => {
         {
           speaker: 'ai',
           type: 'question',
-          text: firstQuestionObj.questionText,
-          questionRef: firstQuestionObj.questionId || null,
+          text: welcomeIntroText,
+          questionRef: 'intro',
           createdAt: new Date(),
         },
       ],
       questions: [
         {
+          questionId: 'intro',
+          questionText: welcomeIntroText,
+          answerText: null,
+          feedback: "Welcome to your interview practice! Let's begin.",
+          score: null,
+          topic: 'Introduction & Background',
+          isCodingProblem: false,
+          normalizedTitle: 'Introduction',
+          patterns: [],
+        },
+        {
           questionId: firstQuestionObj.questionId || null,
           questionText: firstQuestionObj.questionText,
           answerText: null,
-          feedback: "Welcome to your interview practice! Let's begin.",
+          feedback: null,
           score: null,
           topic: firstQuestionObj.topic,
           // Phase 1 & 2: copy metadata from QuestionBank

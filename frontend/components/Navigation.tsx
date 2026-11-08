@@ -3,15 +3,20 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Moon, Sun } from 'lucide-react';
 import Image from 'next/image';
 
 const Navigation = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    // Check initial dark mode state
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    setIsDark(isDarkMode);
+
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
 
@@ -25,6 +30,18 @@ const Navigation = () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [pathname]);
+
+  const toggleDarkMode = () => {
+    const nextDark = !isDark;
+    setIsDark(nextDark);
+    if (nextDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -86,6 +103,16 @@ const Navigation = () => {
           className="hidden sm:inline-block px-4 py-2 bg-white rounded-xl border-2 border-black text-black font-bold text-xs sm:text-sm hover:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer"
         >
           About
+        </button>
+
+        {/* Dark Mode Toggle */}
+        <button
+          type="button"
+          onClick={toggleDarkMode}
+          aria-label="Toggle theme"
+          className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl border-2 border-black dark:border-slate-600 text-black dark:text-yellow-300 flex items-center justify-center hover:bg-yellow-100 dark:hover:bg-slate-700 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
         {isLoggedIn ? (

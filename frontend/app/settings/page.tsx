@@ -2,26 +2,43 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Key, Sparkles, CheckCircle2, ShieldCheck, ExternalLink, Sliders } from 'lucide-react';
+import { Key, Sparkles, CheckCircle2, ShieldCheck, ExternalLink, Sliders, Volume2, Moon, Sun } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [groqKey, setGroqKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [isByokEnabled, setIsByokEnabled] = useState(false);
+  const [preferredVoice, setPreferredVoice] = useState('Google UK English Female');
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load local BYOK settings
+    // Load local settings
     const savedGroq = localStorage.getItem('byok_groq_key') || '';
     const savedGemini = localStorage.getItem('byok_gemini_key') || '';
     const savedEnabled = localStorage.getItem('byok_enabled') === 'true';
+    const savedVoice = localStorage.getItem('preferred_interviewer_voice') || 'Google UK English Female';
+    const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
 
     setGroqKey(savedGroq);
     setGeminiKey(savedGemini);
     setIsByokEnabled(savedEnabled);
+    setPreferredVoice(savedVoice);
+    setIsDarkMode(isDark);
+
+    // Populate browser speech synthesis voices
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const updateVoices = () => {
+        const vList = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith('en'));
+        setAvailableVoices(vList);
+      };
+      updateVoices();
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
 
     // Also sync from backend user settings if logged in
     const token = localStorage.getItem('token');
@@ -63,6 +80,16 @@ export default function SettingsPage() {
       localStorage.setItem('byok_groq_key', groqKey.trim());
       localStorage.setItem('byok_gemini_key', geminiKey.trim());
       localStorage.setItem('byok_enabled', isByokEnabled ? 'true' : 'false');
+      localStorage.setItem('preferred_interviewer_voice', preferredVoice);
+
+      // Dark mode update
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
 
       // 2. Persist to backend if authenticated
       const token = localStorage.getItem('token');
@@ -110,7 +137,74 @@ export default function SettingsPage() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-black">Settings & Preferences</h1>
-              <p className="text-xs text-gray-700 font-medium">Configure model preferences & Bring Your Own Key (BYOK)</p>
+              <p className="text-xs text-gray-700 font-medium">Configure voice actor, theme, and API keys</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Voice & Theme Card */}
+        <div className="bg-white/95 rounded-2xl border-4 border-black p-6 sm:p-8 space-y-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+          <div className="border-b-2 border-black/10 pb-4">
+            <h2 className="text-base font-black text-black flex items-center gap-2">
+              <Volume2 className="w-4 h-4 text-purple-600" />
+              <span>AI Interviewer Voice & Experience</span>
+            </h2>
+            <p className="text-xs text-gray-700 font-medium mt-1">
+              Configure the speech synthesis voice the AI uses to speak questions and follow-ups out loud.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* Preferred Voice Select */}
+            <div className="space-y-1.5">
+              <label htmlFor="voice-select" className="text-xs font-black uppercase text-black tracking-wider block">
+                Default Interviewer Voice
+              </label>
+              <select
+                id="voice-select"
+                value={preferredVoice}
+                onChange={(e) => setPreferredVoice(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-bold font-mono border-2 border-black rounded-xl bg-white text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+              >
+                <option value="Google UK English Female">
+                  Google UK English Female (Natural Studio) [Default]
+                </option>
+                {availableVoices
+                  .filter((v) => !v.name.includes('Google UK English Female'))
+                  .map((v) => (
+                    <option key={v.name} value={v.name}>
+                      {v.name} ({v.lang})
+                    </option>
+                  ))}
+              </select>
+              <p className="text-[11px] text-gray-600 font-medium">
+                The AI automatically announces every interview question using this voice.
+              </p>
+            </div>
+
+            {/* Dark Theme Mode Toggle */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black uppercase text-black tracking-wider block">
+                Visual Theme Mode
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`w-full py-2 px-3 rounded-xl border-2 border-black text-xs font-bold flex items-center justify-between transition-all ${
+                  isDarkMode
+                    ? 'bg-slate-900 text-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
+                    : 'bg-yellow-100 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-600" />}
+                  <span>{isDarkMode ? 'Dark Theme (Night Mode)' : 'Light Theme (Neo-Brutalist)'}</span>
+                </div>
+                <span className="text-[11px] font-black underline uppercase">Toggle</span>
+              </button>
+              <p className="text-[11px] text-gray-600 font-medium">
+                Switch between high-contrast light mode and eye-comfort dark mode.
+              </p>
             </div>
           </div>
         </div>
