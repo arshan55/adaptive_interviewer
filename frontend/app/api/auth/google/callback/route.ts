@@ -7,10 +7,16 @@ const BACKEND_URL =
   process.env.BACKEND_URL ||
   'http://localhost:5000';
 
-// Ensure REDIRECT_URI is dynamic for local and production environments
-const REDIRECT_URI = process.env.NODE_ENV === 'production' 
-  ? `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL}/api/auth/google/callback`
-  : 'http://localhost:3000/api/auth/google/callback';
+function getRedirectUri() {
+  if (process.env.NODE_ENV !== 'production') {
+    return 'http://localhost:3000/api/auth/google/callback';
+  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://frontend-m16o.vercel.app');
+  const base = appUrl.startsWith('http') ? appUrl : `https://${appUrl}`;
+  return `${base.replace(/\/+$/, '')}/api/auth/google/callback`;
+}
+
+const REDIRECT_URI = getRedirectUri();
 
 // Force dynamic rendering and use edge runtime
 export const dynamic = 'force-dynamic';

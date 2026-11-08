@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-// Use the actual Vercel deployment URL - must match exactly what's in Google Cloud Console
-const REDIRECT_URI = process.env.NODE_ENV === 'production' 
-  ? `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL}/api/auth/google/callback`
-  : 'http://localhost:3000/api/auth/google/callback';
+function getRedirectUri() {
+  if (process.env.NODE_ENV !== 'production') {
+    return 'http://localhost:3000/api/auth/google/callback';
+  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://frontend-m16o.vercel.app');
+  const base = appUrl.startsWith('http') ? appUrl : `https://${appUrl}`;
+  return `${base.replace(/\/+$/, '')}/api/auth/google/callback`;
+}
+
+const REDIRECT_URI = getRedirectUri();
 
 if (!GOOGLE_CLIENT_ID) {
   console.error('GOOGLE_CLIENT_ID is not set in environment variables');
