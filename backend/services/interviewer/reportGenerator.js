@@ -232,12 +232,27 @@ async function generateInterviewReport(interviewId) {
       maxTokens: 2000,
     });
 
+    // Calculate real mathematical overall score averaged from all evaluated questions & signals
+    const questionScores = (interview.questions || [])
+      .map((q) => {
+        if (q.signals && typeof q.signals.correctness === 'number') {
+          return Math.round((q.signals.correctness * 0.45) + (q.signals.depth * 0.35) + (q.signals.clarity * 0.20));
+        }
+        return q.score || q.codeScore;
+      })
+      .filter((s) => typeof s === 'number' && s > 0);
+
+    const calculatedAvgScore = questionScores.length > 0
+      ? Math.round(questionScores.reduce((a, b) => a + b, 0) / questionScores.length)
+      : generated.overallScore;
+
     // Populate report and mark interview as completed
     interview.report = {
       ...generated,
+      overallScore: calculatedAvgScore,
       generatedAt: new Date(),
     };
-    interview.overallScore = generated.overallScore;
+    interview.overallScore = calculatedAvgScore;
     interview.overallFeedback = generated.strengths.join('; ');
     interview.status = 'completed';
     interview.endedAt = new Date();

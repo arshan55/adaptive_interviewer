@@ -124,28 +124,22 @@ export default function InterviewPage() {
       lastSpokenQuestionIdxRef.current = currentQuestionIndex;
       // Slight delay so the user sees the transition before speaking begins
       const timer = setTimeout(() => {
-        voiceInterviewer.speakText(currentQuestion.questionText);
+        let textToSpeak = currentQuestion.questionText;
+
+        if (isCodingQuestion) {
+          const title = currentQuestion.title;
+          if (title) {
+            textToSpeak = `Here is your next coding challenge: ${title}. Please review the problem description and implement your solution in the code editor.`;
+          } else {
+            textToSpeak = `Please review this technical coding challenge and implement your solution in the code editor.`;
+          }
+        }
+
+        voiceInterviewer.speakText(textToSpeak);
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [currentQuestionIndex, currentQuestion?.questionText, interview?.status, voiceInterviewer.isSupported]);
-
-  // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing
-  useEffect(() => {
-    if (isCodingQuestion) {
-      if (voiceInterviewer.isVoiceActive) {
-        voiceInterviewer.stopListening();
-      }
-    } else if (
-      interview?.status === 'active' &&
-      interview?.config?.voice &&
-      voiceInterviewer.isSupported &&
-      !voiceInterviewer.isVoiceActive
-    ) {
-      voiceInterviewer.startListening();
-      setAnswerMode('voice');
-    }
-  }, [isCodingQuestion, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
+  }, [currentQuestionIndex, currentQuestion?.questionText, currentQuestion?.title, isCodingQuestion, interview?.status, voiceInterviewer.isSupported]);
 
   // Reset runner when question changes
   useEffect(() => {
@@ -278,7 +272,32 @@ export default function InterviewPage() {
   const hintsRemaining = Math.max(0, 2 - hintsUsed);
   const followupsRemaining = Math.max(0, 2 - followupsUsed);
 
-  const isLastQuestion = currentQuestionIndex >= interview.questions.length - 1;
+  // Check if there is an active pending follow-up question asked by the AI for the current question
+  const currentQuestionTurns = existingTurns.filter(
+    (t) => t.questionRef === currentQuestion?.questionId
+  );
+  const lastTurn = currentQuestionTurns[currentQuestionTurns.length - 1];
+  const hasActiveFollowup = Boolean(lastTurn && lastTurn.speaker === 'ai' && lastTurn.type === 'followup');
+  const activeFollowupText = hasActiveFollowup ? lastTurn?.text : null;
+
+  // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing,
+  // UNLESS the AI has just asked a follow-up question (e.g. TC/SC question) that requires the candidate to speak!
+  useEffect(() => {
+    if (isCodingQuestion && !hasActiveFollowup) {
+      if (voiceInterviewer.isVoiceActive) {
+        voiceInterviewer.stopListening();
+      }
+    } else if (
+      interview?.status === 'active' &&
+      interview?.config?.voice &&
+      voiceInterviewer.isSupported &&
+      !voiceInterviewer.isVoiceActive
+    ) {
+      voiceInterviewer.startListening();
+      setAnswerMode('voice');
+    }
+  }, [isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
+  const isLastQuestion = currentQuestionIndex >= (interview?.questions?.length || 1) - 1;
   const isQuestionAnswered = Boolean(currentQuestion?.feedback || currentQuestion?.score != null);
 
   return (
@@ -308,7 +327,7 @@ export default function InterviewPage() {
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 space-y-6">
           {/* Secondary controls header: Mode toggle & More menu */}
           <div className="flex items-center justify-between text-xs">
-            {!isCodingQuestion ? (
+            {(!isCodingQuestion || hasActiveFollowup) ? (
               <div className="inline-flex items-center p-1 rounded-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <button
                   type="button"
@@ -391,7 +410,7 @@ export default function InterviewPage() {
             </div>
           </div>
 
-          {/* Center Question */}
+          {/* Center Question with Dynamic Follow-up State */}
           <QuestionPanel
             question={currentQuestion}
             questionIndex={currentQuestionIndex}
@@ -400,6 +419,7 @@ export default function InterviewPage() {
             patterns={interview.config?.patterns}
             followupsRemaining={followupsRemaining}
             hintsRemaining={hintsRemaining}
+            activeFollowup={activeFollowupText}
           />
 
           {/* Inline Reviewing State: Never blanks the screen */}
@@ -424,7 +444,51 @@ export default function InterviewPage() {
 
           {/* ONE Answer Area */}
           <div className="space-y-6">
-            {isCodingQuestion ? (
+            {/* If there is an active AI follow-up (e.g. TC/SC question asked on code), prioritize Voice/Text answer input */}
+            {hasActiveFollowup ? (
+              answerMode === 'voice' ? (
+                <VoiceConversationPanel
+                  isVoiceActive={voiceInterviewer.isVoiceActive}
+                  voiceStatus={voiceInterviewer.voiceStatus}
+                  isSupported={voiceInterviewer.isSupported}
+                  finalTranscript={voiceInterviewer.finalTranscript}
+                  interimTranscript={voiceInterviewer.interimTranscript}
+                  streamingAiMessage={streamingAiMessage}
+                  metrics={voiceInterviewer.metrics}
+                  onToggleVoice={voiceInterviewer.toggleVoiceMode}
+                  onInterruptAi={voiceInterviewer.stopAiSpeaking}
+                  onCommitSpeech={voiceInterviewer.commitTurnAnswer}
+                  isSubmitting={isGeneratingFeedback}
+                  availableVoices={voiceInterviewer.availableVoices}
+                  selectedVoiceName={voiceInterviewer.selectedVoiceName}
+                  onSelectVoice={voiceInterviewer.selectVoiceByName}
+                />
+              ) : (
+                <div className="rounded-2xl border-4 border-black p-6 sm:p-8 space-y-4 bg-white/95 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                  <label htmlFor="followup-ans" className="text-xs font-black uppercase tracking-wider text-black block">
+                    Type your answer to the interviewer's question:
+                  </label>
+                  <textarea
+                    id="followup-ans"
+                    value={textAnswer}
+                    onChange={(e) => setTextAnswer(e.target.value)}
+                    placeholder="e.g. The time complexity is O(N log N) because we insert each element into a heap..."
+                    className="w-full min-h-[140px] p-4 text-base font-medium rounded-xl border-2 border-black bg-white text-black placeholder-gray-500 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isGeneratingFeedback}
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSubmitText}
+                      disabled={isGeneratingFeedback || !textAnswer.trim()}
+                      className="py-2.5 px-6 rounded-xl border-2 border-black font-black text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all disabled:opacity-50"
+                    >
+                      Submit Answer
+                    </button>
+                  </div>
+                </div>
+              )
+            ) : isCodingQuestion ? (
               <CodeEditorPanel
                 code={codeContent}
                 onChange={setCodeContent}
@@ -485,13 +549,17 @@ export default function InterviewPage() {
               </div>
             )}
 
-            {/* 4. Feedback Card: Big score, 2-3 bullets, See details expander */}
+            {/* 4. Feedback Card: Big score, 2-3 bullets, 3 distinct evaluation metrics */}
             {isQuestionAnswered && (
               <FeedbackPanel
                 score={currentQuestion?.score}
                 feedback={currentQuestion?.feedback}
                 metrics={voiceInterviewer.metrics}
-                signals={{ clarity: 8, depth: 7, correctness: 8 }}
+                signals={currentQuestion?.signals ? {
+                  correctness: currentQuestion.signals.correctness ?? 5,
+                  depth: currentQuestion.signals.depth ?? 5,
+                  clarity: currentQuestion.signals.clarity ?? 5,
+                } : { clarity: 6, depth: 6, correctness: 6 }}
               />
             )}
 

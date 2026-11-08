@@ -54,6 +54,10 @@ const QuestionSchema = new mongoose.Schema({
     default: null
   },
   // Phase 1 additions — copied from QuestionBank at question-selection time
+  title: {
+    type: String,
+    default: null
+  },
   isCodingProblem: {
     type: Boolean,
     default: false
@@ -66,6 +70,12 @@ const QuestionSchema = new mongoose.Schema({
   improvements: {
     type: [String],
     default: []
+  },
+  // Multi-dimensional evaluation signals
+  signals: {
+    correctness: { type: Number, default: null },
+    depth: { type: Number, default: null },
+    clarity: { type: Number, default: null },
   },
   // Phase 2 addition: DSA pattern tags associated with this question
   patterns: {

@@ -15,6 +15,7 @@ import { TestRunSummary } from '@/lib/codeRunner';
 export interface QuestionState {
   _id?: string;
   questionId?: string | null;
+  title?: string | null;
   questionText: string;
   answerText: string | null;
   feedback: string | null;
@@ -29,6 +30,11 @@ export interface QuestionState {
   patterns?: string[];
   rubricNotes?: string[];
   topic?: string;
+  signals?: {
+    correctness?: number | null;
+    depth?: number | null;
+    clarity?: number | null;
+  };
 }
 
 export interface InterviewSessionState {

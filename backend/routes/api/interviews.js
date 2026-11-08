@@ -465,6 +465,7 @@ router.post('/', auth, async (req, res) => {
       questions: [
         {
           questionId: 'intro',
+          title: 'Introduction',
           questionText: welcomeIntroText,
           answerText: null,
           feedback: "Welcome to your interview practice! Let's begin.",
@@ -476,6 +477,7 @@ router.post('/', auth, async (req, res) => {
         },
         {
           questionId: firstQuestionObj.questionId || null,
+          title: firstQuestionObj.title || null,
           questionText: firstQuestionObj.questionText,
           answerText: null,
           feedback: null,
@@ -612,6 +614,13 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
       if (decision.message) {
         question.feedback = decision.message;
       }
+      if (decision.signals) {
+        question.signals = {
+          correctness: decision.signals.correctness ?? 5,
+          depth: decision.signals.depth ?? 5,
+          clarity: decision.signals.clarity ?? 5,
+        };
+      }
       if (typeof decision.score === 'number') {
         // Solution 4: Deduct 1 pt penalty if hints were used during this question
         const hintsUsed = (interview.turns || []).filter(
@@ -722,6 +731,7 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
 
           const newQuestion = {
             questionId: nextQuestionObj.questionId || null,
+            title: nextQuestionObj.title || null,
             questionText: questionPromptText,
             answerText: null,
             feedback: null,

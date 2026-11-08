@@ -80,6 +80,24 @@ export const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
         </button>
       </div>
 
+      {/* 3 Clear Evaluation Metrics & Score Breakdown */}
+      {signals && (
+        <div className="grid grid-cols-3 gap-2 py-1">
+          <div className="rounded-xl border-2 border-black bg-emerald-50 p-2.5 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="text-[10px] uppercase font-black tracking-wider text-emerald-900 block">Correctness (45%)</span>
+            <span className="text-lg font-mono font-black text-emerald-800">{signals.correctness ?? 5}/10</span>
+          </div>
+          <div className="rounded-xl border-2 border-black bg-indigo-50 p-2.5 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="text-[10px] uppercase font-black tracking-wider text-indigo-900 block">Depth & TC/SC (35%)</span>
+            <span className="text-lg font-mono font-black text-indigo-800">{signals.depth ?? 5}/10</span>
+          </div>
+          <div className="rounded-xl border-2 border-black bg-amber-50 p-2.5 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="text-[10px] uppercase font-black tracking-wider text-amber-900 block">Clarity (20%)</span>
+            <span className="text-lg font-mono font-black text-amber-800">{signals.clarity ?? 5}/10</span>
+          </div>
+        </div>
+      )}
+
       {/* Merged Compact Speaking Stats Line (WPM • fillers • response time) */}
       {metrics && (metrics.wpm || metrics.fillerWordsCount) && (
         <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-black bg-slate-100 border border-black/20 rounded-xl px-3 py-2">

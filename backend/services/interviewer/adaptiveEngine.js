@@ -39,6 +39,16 @@ const turnDecisionSchema = z.object({
  * @param {number} currentStreak
  * @returns {{ newDifficulty: 'easy'|'medium'|'hard', newStreak: number }}
  */
+function computeAverageScoreFromSignals(signals) {
+  if (!signals) return 6;
+  const correctness = typeof signals.correctness === 'number' ? signals.correctness : 5;
+  const depth = typeof signals.depth === 'number' ? signals.depth : 5;
+  const clarity = typeof signals.clarity === 'number' ? signals.clarity : 5;
+  // Weighted average: Correctness (45%), Depth (35%), Communication & Clarity (20%)
+  const weighted = (correctness * 0.45) + (depth * 0.35) + (clarity * 0.20);
+  return Math.max(1, Math.min(10, Math.round(weighted)));
+}
+
 function computeAdaptedDifficulty(currentDifficulty, score, currentStreak = 0) {
   const levels = ['easy', 'medium', 'hard'];
   let curIdx = levels.indexOf(currentDifficulty);
@@ -108,6 +118,24 @@ Hard Constraints for this question:
 If follow-ups remaining is 0, DO NOT choose 'followup'.
 If hints remaining is 0, DO NOT choose 'hint'.
 If followups or hints are exhausted and candidate finished their attempt, choose ${limits.isFinalQuestion ? "'wrap_up'" : "'next'"}.
+
+EVALUATION RUBRIC & SCORING METRICS (DIVERSE 1-10 CALIBRATION):
+Never lazily assign 6 or 7. Evaluate each metric rigorously:
+1. "correctness" (1-10): Algorithmic correctness, syntax validity, handles test cases & edge constraints (or accuracy of technical facts).
+   - 9-10: Flawless solution, handles empty inputs, bounds, duplicates.
+   - 6-7: Working base logic but misses tricky edge cases or suboptimal complexity.
+   - 3-5: Partially correct logic or syntax/logic bugs.
+   - 1-2: Completely incorrect or pseudo-code that fails to solve problem.
+2. "depth" (1-10): Technical depth, complexity trade-offs (Time & Space O(N)), architectural rigor, or STAR result specificity.
+   - 9-10: Thoroughly analyzes optimal TC & SC tradeoffs and alternative approaches.
+   - 6-7: Mentions standard complexity or general approach without trade-off analysis.
+   - 1-4: Vague, superficial, or skips complexity/STAR metrics entirely.
+3. "clarity" (1-10): Communication precision, structured explanation, vocal/written conciseness, low filler words.
+   - 9-10: Structured, confident, concise technical communication.
+   - 6-7: Understandable but rambling or hesitant.
+   - 1-4: Muddled, incoherent, or unstructured.
+
+Set "score" to the integer average of the 3 metrics: Math.round((correctness * 0.45) + (depth * 0.35) + (clarity * 0.20)).
 
 Respond ONLY with a JSON object matching this schema:
 {
@@ -223,6 +251,12 @@ ${code}
  */
 function enforceTurnLimits(decision, limits, isFinalQuestion, defaultAction) {
   const result = { ...decision };
+
+  // If signals are provided, ensure score accurately reflects the multi-metric average
+  if (result.signals && typeof result.signals.correctness === 'number') {
+    result.score = computeAverageScoreFromSignals(result.signals);
+  }
+
   if (result.action === 'followup' && limits.followupsRemaining <= 0) {
     result.action = defaultAction;
     result.message = isFinalQuestion

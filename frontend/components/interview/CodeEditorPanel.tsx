@@ -49,6 +49,20 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
   onToggleConsole,
 }) => {
   const handleEditorMount: OnMount = (editor, monaco) => {
+    // Define custom neo-brutalist dark theme
+    monaco.editor.defineTheme('neo-brutalist-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#0E0D0C',
+        'editor.lineHighlightBackground': '#1C1A18',
+        'editor.selectionBackground': '#2B3F66',
+        'editorCursor.foreground': '#FDE047',
+      },
+    });
+    monaco.editor.setTheme('neo-brutalist-dark');
+
     // Add Ctrl+Enter / Cmd+Enter run code keybinding
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRunCode();
