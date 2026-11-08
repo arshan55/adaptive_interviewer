@@ -28,7 +28,7 @@ const interviewConfigSchema = z.object({
   patterns: z.array(z.string()).default([]),
   difficulty: z.enum(['adaptive', 'easy', 'medium', 'hard']).default('adaptive'),
   durationMin: z.number().int().min(5).max(180).default(30),
-  maxQuestions: z.number().int().min(1).max(20).default(5),
+  maxQuestions: z.number().int().min(0).max(20).default(5),
   voice: z.boolean().default(false),
   company: z.string().nullable().optional().default(null),
   resumeMode: z.enum(['none', 'mix', 'pure']).default('none'),
