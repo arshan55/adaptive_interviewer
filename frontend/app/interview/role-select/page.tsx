@@ -545,8 +545,9 @@ export default function RoleSelectPage() {
                 <label className="block text-sm font-bold text-black mb-1.5 flex items-center gap-1.5">
                   <HelpCircle className="w-4 h-4" /> Questions Limit
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {[
+                    { count: 0, label: 'Adaptive Dynamic (No Limit)' },
                     { count: 3, label: '3 Qs (Quick)' },
                     { count: 5, label: '5 Qs (Standard)' },
                     { count: 7, label: '7 Qs (Deep)' },
@@ -567,7 +568,7 @@ export default function RoleSelectPage() {
                   ))}
                 </div>
                 <p className="text-[11px] text-gray-600 mt-1">
-                  Choose how many interview questions to practice in this session.
+                  Choose fixed question limit or select <strong>Adaptive Dynamic</strong> to let the session flow naturally until you decide to complete it.
                 </p>
               </div>
             </div>

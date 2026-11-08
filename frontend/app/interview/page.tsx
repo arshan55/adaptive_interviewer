@@ -74,15 +74,18 @@ export default function InterviewPage() {
     }
   }, [interview?.programmingLanguage]);
 
+  // Set code signature when coding question or language changes
   useEffect(() => {
     if (isCodingQuestion && codingProblemDetails?.functionSignature) {
       const sig =
         codingProblemDetails.functionSignature[selectedCodingLanguage] ||
         codingProblemDetails.functionSignature['javascript'] ||
         '';
-      if (sig && !codeContent) setCodeContent(sig);
+      setCodeContent(sig);
+    } else if (!isCodingQuestion) {
+      setCodeContent('');
     }
-  }, [isCodingQuestion, codingProblemDetails, selectedCodingLanguage, codeContent]);
+  }, [isCodingQuestion, codingProblemDetails, selectedCodingLanguage, currentQuestionIndex]);
 
   // Voice interviewer integration
   const voiceInterviewer = useVoiceInterviewer({
@@ -95,7 +98,9 @@ export default function InterviewPage() {
           voiceInterviewer.finishAiStream();
           if (comp?.action === 'wrap_up') {
             voiceInterviewer.stopListening();
-            voiceInterviewer.stopAiSpeaking();
+            if (comp?.message) {
+              voiceInterviewer.speakText(comp.message);
+            }
           }
         },
       });
@@ -141,7 +146,7 @@ export default function InterviewPage() {
     }
   }, [currentQuestionIndex, currentQuestion?.questionText, currentQuestion?.title, isCodingQuestion, interview?.status, voiceInterviewer.isSupported]);
 
-  // Reset runner when question changes
+  // Reset runner and code when question changes
   useEffect(() => {
     resetCodeRunner();
     setTextAnswer('');
@@ -548,20 +553,6 @@ export default function InterviewPage() {
                   </button>
                 </div>
               </div>
-            )}
-
-            {/* 4. Feedback Card: Big score, 2-3 bullets, 3 distinct evaluation metrics */}
-            {isQuestionAnswered && (
-              <FeedbackPanel
-                score={currentQuestion?.score}
-                feedback={currentQuestion?.feedback}
-                metrics={voiceInterviewer.metrics}
-                signals={currentQuestion?.signals ? {
-                  correctness: currentQuestion.signals.correctness ?? 5,
-                  depth: currentQuestion.signals.depth ?? 5,
-                  clarity: currentQuestion.signals.clarity ?? 5,
-                } : { clarity: 6, depth: 6, correctness: 6 }}
-              />
             )}
 
             {/* Bottom Bar: Clean forward progression */}

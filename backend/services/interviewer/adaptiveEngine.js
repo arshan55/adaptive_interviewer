@@ -167,8 +167,11 @@ async function prepareTurnContext({ interview, questionIndex, text, code, langua
     (t) => t.speaker === 'ai' && t.type === 'hint' && (t.questionRef === qId || !t.questionRef)
   ).length;
 
-  const maxQuestions = interview.config?.maxQuestions || 5;
-  const isFinalQuestion = questionIndex >= maxQuestions - 1;
+  const maxQuestions = typeof interview.config?.maxQuestions === 'number'
+    ? interview.config.maxQuestions
+    : 5;
+  // If maxQuestions is 0, session is in dynamic/continuous mode and has no preset question limit
+  const isFinalQuestion = maxQuestions > 0 ? questionIndex >= maxQuestions - 1 : false;
 
   const limits = {
     followupsRemaining: Math.max(0, MAX_FOLLOWUPS - existingFollowups),
@@ -231,7 +234,7 @@ ${code}
   const safeDefault = {
     action: defaultAction,
     message: isFinalQuestion
-      ? "Thank you for sharing. We have reached the end of the questions for this interview session."
+      ? "Thank you so much for your thoughtful answers and effort today! That concludes all questions for this interview session. I am preparing your comprehensive feedback report now."
       : "Thank you for that response. Let's move on to the next question.",
     score: 6,
     signals: { clarity: 6, depth: 6, correctness: 6 },
@@ -260,12 +263,12 @@ function enforceTurnLimits(decision, limits, isFinalQuestion, defaultAction) {
   if (result.action === 'followup' && limits.followupsRemaining <= 0) {
     result.action = defaultAction;
     result.message = isFinalQuestion
-      ? "That concludes our discussion on this topic. Let's wrap up our session."
+      ? "Thank you so much for your effort and thoughtful answers today! That concludes all parts of our interview. I'm now compiling your assessment report."
       : "Good. Let's move on to the next question.";
   } else if (result.action === 'hint' && limits.hintsRemaining <= 0) {
     result.action = defaultAction;
     result.message = isFinalQuestion
-      ? "We have covered what we can here. Let's wrap up the session."
+      ? "Thank you so much for your effort today! We have concluded our questions, and I am preparing your final feedback report."
       : "Understood. Let's move on to the next question.";
   }
   return result;

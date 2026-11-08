@@ -33,9 +33,21 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   }
 
   const rawText = question.questionText || '';
-  const displayPrompt = isCodingQuestion
-    ? rawText.replace(/^\[CODING_PROBLEM\]\s*/i, '').trim()
-    : rawText;
+  // Strip [CODING_PROBLEM] prefix and any accidental transition phrase from coding question prompt
+  let displayPrompt = rawText.replace(/\[CODING_PROBLEM\]/gi, '').trim();
+
+  // If this is a coding question and starts with an accidental transition sentence (e.g. "Interesting points on... Moving forward: ..."), separate or strip it
+  if (isCodingQuestion) {
+    displayPrompt = displayPrompt.replace(/^(?:Interesting points on [^.]*\.|Building on [^.]*\.|Understood\. [^.]*\.)\s*(?:Moving forward:?\s*)?/i, '').trim();
+    
+    // Format "Example:", "Example 1:", "Constraints:", "Input:", "Output:" with markdown linebreaks and bolding if they were smashed onto one line
+    displayPrompt = displayPrompt
+      .replace(/(Example\s*\d*:?)/gi, '\n\n**$1**\n')
+      .replace(/(Input:)/gi, '\n- **Input:**')
+      .replace(/(Output:)/gi, '\n- **Output:**')
+      .replace(/(Explanation:)/gi, '\n- **Explanation:**')
+      .replace(/(Constraints:)/gi, '\n\n**Constraints:**\n');
+  }
 
   const questionPatterns = question.patterns?.length ? question.patterns : patterns;
   const problemTitle = question.title || (isCodingQuestion ? 'Coding Challenge' : question.topic || 'Interview Question');

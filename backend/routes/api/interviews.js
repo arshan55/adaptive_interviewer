@@ -664,89 +664,95 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
         interview.performanceStreak = newStreak;
       }
 
-      // Check if session has reached max questions
-      if (interview.questions.length >= maxQuestions) {
-        decision.action = 'wrap_up';
-        decision.message = "That concludes all questions for this session. Compiling your comprehensive feedback report now.";
-        interview.status = 'completing';
-        generateInterviewReport(interview._id).catch((err) =>
-          console.error('Background report generation failed:', err)
-        );
-      } else {
-        // Select next adaptive question (checking if resume questions should be interleaved)
-        let nextQuestionObj = null;
-        const currentTargetDiff = interview.config?.difficulty === 'adaptive'
-          ? (interview.runningDifficulty || 'medium')
-          : (interview.config?.difficulty || 'medium');
-
-        const currentQuestionTexts = interview.questions.map((q) => q.questionText);
-        const currentTopics = interview.questions.map((q) => q.topic).filter(Boolean);
-        const pastQuestionHistory = await getUserPastQuestionHistory(req.user.id);
-
-        const hasResumeConfig = Boolean(interview.config?.resumeText && interview.config.resumeText.trim());
-        const resumeMode = interview.config?.resumeMode || 'none';
-
-        // In pure resume mode, always generate from resume; in mix mode, alternate or 50%
-        if (hasResumeConfig && (resumeMode === 'pure' || (resumeMode === 'mix' && interview.questions.length % 2 === 1))) {
-          nextQuestionObj = await generateResumeQuestion(
-            interview.config.resumeText,
-            interview.role,
-            currentQuestionTexts
+        // Check if session has reached max questions (if maxQuestions is 0, endless dynamic mode is enabled)
+        const isEndlessMode = maxQuestions === 0;
+        if (!isEndlessMode && interview.questions.length >= maxQuestions) {
+          decision.action = 'wrap_up';
+          decision.message = "Thank you so much for your time and thoughtful responses today! That completes all parts of our interview. I am now compiling your comprehensive performance assessment and feedback report.";
+          interview.status = 'completing';
+          generateInterviewReport(interview._id).catch((err) =>
+            console.error('Background report generation failed:', err)
           );
-        }
+        } else {
+          // Select next adaptive question (checking if resume questions should be interleaved)
+          let nextQuestionObj = null;
+          const currentTargetDiff = interview.config?.difficulty === 'adaptive'
+            ? (interview.runningDifficulty || 'medium')
+            : (interview.config?.difficulty || 'medium');
 
-        if (!nextQuestionObj) {
-          nextQuestionObj = await selectBestQuestion({
-            role: interview.role,
-            targetDifficulty: currentTargetDiff,
-            mode: interview.config?.mode,
-            patterns: interview.config?.patterns,
-            company: interview.config?.company,
-            seenKeys: new Set([
-              ...pastQuestionHistory.seenKeys,
-              ...currentQuestionTexts.map((t) => t.toLowerCase().trim()),
-              ...currentTopics.map((t) => t.toLowerCase().trim()),
-            ]),
-            preferredTopics: currentTopics.length > 0 ? currentTopics : pastQuestionHistory.topics,
-            recentTopics: currentTopics,
-          });
-        }
+          const currentQuestionTexts = interview.questions.map((q) => q.questionText);
+          const currentTopics = interview.questions.map((q) => q.topic).filter(Boolean);
+          const pastQuestionHistory = await getUserPastQuestionHistory(req.user.id);
 
-        if (nextQuestionObj) {
-          // Dynamic conversational transition referencing previous answer
-          let questionPromptText = nextQuestionObj.questionText;
-          if (text && text.length > 20) {
-            const shortTopic = question?.topic || 'that';
-            const transitionPhrases = [
-              `Building on what you just shared regarding ${shortTopic}, `,
-              `Interesting points on ${shortTopic}. Moving forward: `,
-              `Understood. Connecting to that, `,
-            ];
-            const randomTransition = transitionPhrases[Math.floor(Math.random() * transitionPhrases.length)];
-            // Prepend contextual transition if question doesn't already start with a transition
-            if (!questionPromptText.toLowerCase().startsWith('building') && !questionPromptText.toLowerCase().startsWith('moving')) {
-              questionPromptText = `${randomTransition}${questionPromptText.charAt(0).toLowerCase() + questionPromptText.slice(1)}`;
-            }
+          const hasResumeConfig = Boolean(interview.config?.resumeText && interview.config.resumeText.trim());
+          const resumeMode = interview.config?.resumeMode || 'none';
+
+          // In pure resume mode, always generate from resume; in mix mode, alternate or 50%
+          if (hasResumeConfig && (resumeMode === 'pure' || (resumeMode === 'mix' && interview.questions.length % 2 === 1))) {
+            nextQuestionObj = await generateResumeQuestion(
+              interview.config.resumeText,
+              interview.role,
+              currentQuestionTexts
+            );
           }
 
-          const newQuestion = {
-            questionId: nextQuestionObj.questionId || null,
-            title: nextQuestionObj.title || null,
-            questionText: questionPromptText,
-            answerText: null,
-            feedback: null,
-            score: null,
-            codeAnswer: null,
-            programmingLanguage: null,
-            codeFeedback: null,
-            codeScore: null,
-            audioAnswer: null,
-            topic: nextQuestionObj.topic,
-            isCodingProblem: !!nextQuestionObj.isCodingProblem,
-            normalizedTitle: nextQuestionObj.normalizedTitle || null,
-            patterns: nextQuestionObj.patterns || [],
-          };
-          interview.questions.push(newQuestion);
+          if (!nextQuestionObj) {
+            nextQuestionObj = await selectBestQuestion({
+              role: interview.role,
+              targetDifficulty: currentTargetDiff,
+              mode: interview.config?.mode,
+              patterns: interview.config?.patterns,
+              company: interview.config?.company,
+              seenKeys: new Set([
+                ...pastQuestionHistory.seenKeys,
+                ...currentQuestionTexts.map((t) => t.toLowerCase().trim()),
+                ...currentTopics.map((t) => t.toLowerCase().trim()),
+              ]),
+              preferredTopics: currentTopics.length > 0 ? currentTopics : pastQuestionHistory.topics,
+              recentTopics: currentTopics,
+            });
+          }
+
+          if (nextQuestionObj) {
+            // Clean question text and avoid prepending transition phrases to coding challenges
+            let cleanQuestionPrompt = (nextQuestionObj.questionText || '')
+              .replace(/\[CODING_PROBLEM\]/gi, '')
+              .trim();
+
+            const isCoding = !!nextQuestionObj.isCodingProblem;
+
+            // Only prepend conversational transitions to behavioral/verbal questions, NOT coding problem statements
+            if (!isCoding && text && text.length > 20) {
+              const shortTopic = question?.topic || 'that';
+              const transitionPhrases = [
+                `Building on what you just shared regarding ${shortTopic}, `,
+                `Interesting points on ${shortTopic}. Moving forward: `,
+                `Understood. Connecting to that, `,
+              ];
+              const randomTransition = transitionPhrases[Math.floor(Math.random() * transitionPhrases.length)];
+              if (!cleanQuestionPrompt.toLowerCase().startsWith('building') && !cleanQuestionPrompt.toLowerCase().startsWith('moving')) {
+                cleanQuestionPrompt = `${randomTransition}${cleanQuestionPrompt.charAt(0).toLowerCase() + cleanQuestionPrompt.slice(1)}`;
+              }
+            }
+
+            const newQuestion = {
+              questionId: nextQuestionObj.questionId || null,
+              title: nextQuestionObj.title || null,
+              questionText: cleanQuestionPrompt,
+              answerText: null,
+              feedback: null,
+              score: null,
+              codeAnswer: null,
+              programmingLanguage: null,
+              codeFeedback: null,
+              codeScore: null,
+              audioAnswer: null,
+              topic: nextQuestionObj.topic,
+              isCodingProblem: isCoding,
+              normalizedTitle: nextQuestionObj.normalizedTitle || null,
+              patterns: nextQuestionObj.patterns || [],
+            };
+            interview.questions.push(newQuestion);
 
           interview.turns.push({
             speaker: 'ai',
