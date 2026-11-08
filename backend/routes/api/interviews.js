@@ -173,7 +173,7 @@ const getDevFallbackQuestionTexts = (role) => {
     `What trade-offs do you consider when choosing SQL vs NoSQL?`,
   ];
   const techRoles = new Set([
-    'software-engineer', 'frontend-developer', 'backend-developer', 'data-scientist', 'devops-engineer',
+    'software-engineer', 'frontend-developer', 'backend-developer', 'data-scientist', 'devops-engineer', 'ai-engineer', 'ml-engineer',
   ]);
   return techRoles.has(role) ? technical : common;
 };
@@ -597,8 +597,14 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
         question.feedback = decision.message;
       }
       if (typeof decision.score === 'number') {
-        question.score = decision.score;
-        if (question.isCodingProblem) question.codeScore = decision.score;
+        // Solution 4: Deduct 1 pt penalty if hints were used during this question
+        const hintsUsed = (interview.turns || []).filter(
+          (t) => t.speaker === 'ai' && t.type === 'hint' && (t.questionRef === question?.questionId || !t.questionRef)
+        ).length;
+        const adjustedScore = Math.max(1, decision.score - Math.min(2, hintsUsed));
+
+        question.score = adjustedScore;
+        if (question.isCodingProblem) question.codeScore = adjustedScore;
       }
     }
 

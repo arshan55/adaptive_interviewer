@@ -4,7 +4,7 @@ import React from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import { TestResultsPanel } from './TestResultsPanel';
 import { TestRunSummary } from '@/lib/codeRunner';
-import { Play, CheckCircle2, Terminal } from 'lucide-react';
+import { Play, CheckCircle2, Terminal, Lightbulb } from 'lucide-react';
 
 interface CodeEditorPanelProps {
   code: string;
@@ -13,6 +13,8 @@ interface CodeEditorPanelProps {
   onLanguageChange: (lang: string) => void;
   onRunCode: () => void;
   onSubmitSolution: () => void;
+  onRequestHint?: () => void;
+  hintsRemaining?: number;
   isRunningCode: boolean;
   isSubmitting: boolean;
   testSummary: TestRunSummary | null;
@@ -37,6 +39,8 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
   onLanguageChange,
   onRunCode,
   onSubmitSolution,
+  onRequestHint,
+  hintsRemaining = 2,
   isRunningCode,
   isSubmitting,
   testSummary,
@@ -111,6 +115,27 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2.5">
+          {onRequestHint && (
+            <button
+              type="button"
+              onClick={onRequestHint}
+              disabled={isSubmitting || isRunningCode || hintsRemaining <= 0}
+              title={
+                hintsRemaining > 0
+                  ? `Request AI hint (-1 pt score penalty, ${hintsRemaining} left)`
+                  : 'All hints used for this question'
+              }
+              className={`px-3 py-1.5 rounded-xl border-2 border-black text-xs font-bold font-mono shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                hintsRemaining > 0
+                  ? 'bg-amber-300 hover:bg-amber-400 text-black'
+                  : 'bg-slate-800 text-slate-500'
+              }`}
+            >
+              <Lightbulb className="w-3.5 h-3.5 text-black" />
+              <span>Hint ({hintsRemaining}/2)</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onRunCode}

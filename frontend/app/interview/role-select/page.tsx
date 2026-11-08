@@ -54,6 +54,18 @@ const roles = [
     description: 'CI/CD, cloud infrastructure, container orchestration, and security',
     isTechnical: true,
   },
+  {
+    id: 'ai-engineer',
+    title: 'AI Engineer',
+    description: 'LLM agents, RAG, prompt engineering, model fine-tuning, and vector databases',
+    isTechnical: true,
+  },
+  {
+    id: 'ml-engineer',
+    title: 'ML Engineer',
+    description: 'Machine learning pipelines, MLOps, deep learning architectures, and model training',
+    isTechnical: true,
+  },
 ];
 
 const programmingLanguages = [
@@ -76,6 +88,8 @@ const roleColors: Record<string, string> = {
   'data-scientist': 'bg-purple-200',
   'product-manager': 'bg-orange-200',
   'devops-engineer': 'bg-blue-200',
+  'ai-engineer': 'bg-emerald-200',
+  'ml-engineer': 'bg-violet-200',
 };
 
 const CANONICAL_PATTERNS = [
@@ -101,14 +115,13 @@ export default function RoleSelectPage() {
 
   // Extended options
   const [interviewMode, setInterviewMode] = useState<'mixed' | 'dsa' | 'hr'>('mixed');
-  const [selectedPatterns, setSelectedPatterns] = useState<string[]>([
-    'two-pointers',
-    'sliding-window',
-    'binary-search',
-  ]);
+  const [selectedPatterns, setSelectedPatterns] = useState<string[]>(
+    CANONICAL_PATTERNS.map((p) => p.id)
+  );
   const [difficulty, setDifficulty] = useState<'adaptive' | 'easy' | 'medium' | 'hard'>('adaptive');
   const [targetCompany, setTargetCompany] = useState('');
   const [durationMin, setDurationMin] = useState(30);
+  const [maxQuestions, setMaxQuestions] = useState(5);
   const [voiceEvaluation, setVoiceEvaluation] = useState(true);
 
   // Resume Options
@@ -205,7 +218,7 @@ export default function RoleSelectPage() {
         patterns: interviewMode === 'hr' ? [] : selectedPatterns,
         difficulty,
         durationMin,
-        maxQuestions: 5,
+        maxQuestions,
         voice: voiceEvaluation,
         company: targetCompany.trim() || null,
         resumeMode,
@@ -469,34 +482,63 @@ export default function RoleSelectPage() {
               </p>
             </div>
 
-            {/* Duration */}
-            <div>
-              <label className="block text-sm font-bold text-black mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-4 h-4" /> Session Duration
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { mins: 15, label: '15 Min' },
-                  { mins: 30, label: '30 Min' },
-                  { mins: 45, label: '45 Min' },
-                ].map((d) => (
-                  <button
-                    key={d.mins}
-                    type="button"
-                    onClick={() => setDurationMin(d.mins)}
-                    className={`py-2 px-3 rounded-xl border-2 border-black text-xs font-bold text-center transition-all ${
-                      durationMin === d.mins
-                        ? 'bg-pink-200 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-extrabold'
-                        : 'bg-white text-black hover:bg-slate-100 shadow-sm'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
+            {/* Duration & Question Limit */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-black mb-1.5 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" /> Session Duration
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { mins: 15, label: '15 Min' },
+                    { mins: 30, label: '30 Min' },
+                    { mins: 45, label: '45 Min' },
+                  ].map((d) => (
+                    <button
+                      key={d.mins}
+                      type="button"
+                      onClick={() => setDurationMin(d.mins)}
+                      className={`py-2 px-3 rounded-xl border-2 border-black text-xs font-bold text-center transition-all ${
+                        durationMin === d.mins
+                          ? 'bg-pink-200 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-extrabold'
+                          : 'bg-white text-black hover:bg-slate-100 shadow-sm'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="text-[11px] text-gray-600 mt-1.5">
-                Standard 5 curated questions formatted for this time window.
-              </p>
+
+              <div>
+                <label className="block text-sm font-bold text-black mb-1.5 flex items-center gap-1.5">
+                  <HelpCircle className="w-4 h-4" /> Questions Limit
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { count: 3, label: '3 Qs (Quick)' },
+                    { count: 5, label: '5 Qs (Standard)' },
+                    { count: 7, label: '7 Qs (Deep)' },
+                    { count: 10, label: '10 Qs (Full Loop)' },
+                  ].map((q) => (
+                    <button
+                      key={q.count}
+                      type="button"
+                      onClick={() => setMaxQuestions(q.count)}
+                      className={`py-2 px-2 rounded-xl border-2 border-black text-[11px] font-bold text-center transition-all ${
+                        maxQuestions === q.count
+                          ? 'bg-yellow-200 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black'
+                          : 'bg-white text-black hover:bg-slate-100 shadow-sm'
+                      }`}
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-600 mt-1">
+                  Choose how many interview questions to practice in this session.
+                </p>
+              </div>
             </div>
           </div>
 

@@ -110,9 +110,13 @@ export default function InterviewPage() {
     }
   }, [interview?.status, interview?.report]);
 
-  // Auto-start voice if interview was configured with voice mode (only when active)
+  // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing
   useEffect(() => {
-    if (
+    if (isCodingQuestion) {
+      if (voiceInterviewer.isVoiceActive) {
+        voiceInterviewer.stopListening();
+      }
+    } else if (
       interview?.status === 'active' &&
       interview?.config?.voice &&
       voiceInterviewer.isSupported &&
@@ -121,7 +125,7 @@ export default function InterviewPage() {
       voiceInterviewer.startListening();
       setAnswerMode('voice');
     }
-  }, [interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
+  }, [isCodingQuestion, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
 
   // Reset runner when question changes
   useEffect(() => {
@@ -140,6 +144,17 @@ export default function InterviewPage() {
       code: codeContent,
       language: selectedCodingLanguage,
       testSummary,
+      onToken: (delta) => voiceInterviewer.feedAiToken(delta),
+      onDone: () => voiceInterviewer.finishAiStream(),
+    });
+  };
+
+  const handleRequestHint = async () => {
+    if (isGeneratingFeedback) return;
+    await submitTurn({
+      text: "Could you give me a slight hint or guidance on the approach for this coding problem?",
+      code: codeContent || undefined,
+      language: selectedCodingLanguage,
       onToken: (delta) => voiceInterviewer.feedAiToken(delta),
       onDone: () => voiceInterviewer.finishAiStream(),
     });
@@ -397,6 +412,8 @@ export default function InterviewPage() {
                 onLanguageChange={setSelectedCodingLanguage}
                 onRunCode={handleRunCode}
                 onSubmitSolution={handleSubmitCode}
+                onRequestHint={handleRequestHint}
+                hintsRemaining={hintsRemaining}
                 isRunningCode={isRunningCode}
                 isSubmitting={isGeneratingFeedback}
                 testSummary={testSummary}

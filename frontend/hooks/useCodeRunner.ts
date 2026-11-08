@@ -37,14 +37,31 @@ export function useCodeRunner() {
       setConsoleOutput('Preparing test execution...');
 
       try {
-        const testCases: TestCase[] = (problemDetails?.testCases || []).map((t) => ({
+        // Fallback default test cases if problemDetails has no test cases loaded
+        let testCases: TestCase[] = (problemDetails?.testCases || []).map((t) => ({
           input: t.input,
           expected: t.expected,
           hidden: t.hidden,
         }));
 
+        if (testCases.length === 0) {
+          testCases = [
+            { input: '[]', expected: '[]' },
+            { input: '[1, 2, 3]', expected: '[1, 2, 3]' },
+          ];
+        }
+
+        // Detect function name from candidate code if not specified or defaulting
+        let detectedFn = problemDetails?.entryFunctionName;
+        if (!detectedFn) {
+          const fnMatch = code.match(/(?:function\s+([a-zA-Z0-9_$]+)|const\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\()|def\s+([a-zA-Z0-9_$]+))/);
+          if (fnMatch) {
+            detectedFn = fnMatch[1] || fnMatch[2] || fnMatch[3];
+          }
+        }
+
         const entryFunctionName =
-          problemDetails?.entryFunctionName ||
+          detectedFn ||
           (lang.includes('python') ? 'solution' : 'solve');
 
         let summary: TestRunSummary;

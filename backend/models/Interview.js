@@ -192,12 +192,29 @@ const InterviewSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['software-engineer', 'frontend-developer', 'backend-developer', 'data-scientist', 'product-manager', 'devops-engineer']
+    enum: [
+      'software-engineer',
+      'frontend-developer',
+      'backend-developer',
+      'data-scientist',
+      'product-manager',
+      'devops-engineer',
+      'ai-engineer',
+      'ml-engineer'
+    ]
   },
   programmingLanguage: {
     type: String,
     required: function() {
-      return ['software-engineer', 'frontend-developer', 'backend-developer', 'data-scientist', 'devops-engineer'].includes(this.role);
+      return [
+        'software-engineer',
+        'frontend-developer',
+        'backend-developer',
+        'data-scientist',
+        'devops-engineer',
+        'ai-engineer',
+        'ml-engineer'
+      ].includes(this.role);
     }
   },
   // Phase 2 session configuration & lifecycle
