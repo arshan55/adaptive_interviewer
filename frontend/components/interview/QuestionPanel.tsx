@@ -33,14 +33,30 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   }
 
   const rawText = question.questionText || '';
-  // Strip [CODING_PROBLEM] prefix and any accidental transition phrase from coding question prompt
+  // Strip [CODING_PROBLEM] prefix wherever it appears
   let displayPrompt = rawText.replace(/\[CODING_PROBLEM\]/gi, '').trim();
 
-  // If this is a coding question and starts with an accidental transition sentence (e.g. "Interesting points on... Moving forward: ..."), separate or strip it
   if (isCodingQuestion) {
-    displayPrompt = displayPrompt.replace(/^(?:Interesting points on [^.]*\.|Building on [^.]*\.|Understood\. [^.]*\.)\s*(?:Moving forward:?\s*)?/i, '').trim();
-    
-    // Format "Example:", "Example 1:", "Constraints:", "Input:", "Output:" with markdown linebreaks and bolding if they were smashed onto one line
+    // Strip any leading AI transition sentence before the actual problem.
+    // Patterns like:
+    //   "Interesting points on Introduction & Background. Moving forward: Given..."
+    //   "Building on what you said. Let's move on: Given..."
+    //   "Understood. Moving to the next section: Given..."
+    // Strategy: greedily remove everything up to and including a transition keyword phrase.
+    displayPrompt = displayPrompt
+      .replace(/^[\s\S]*?(?:Moving forward[:\s]+|Moving to[^:]*:\s*|Let(?:'s| us) move on[:\s]+|Next[,:]?\s+(?:up\s*)?(?:question[,:]?\s*)?)/i, '')
+      .trim();
+
+    // If still starts with a sentence that looks like an intro (doesn't start with a typical problem opener)
+    // fall back to stripping everything before the first "Given" / "You are given" / "Write a" / "Design a"
+    if (displayPrompt && !/^(?:Given|You are|Write a|Design a|Find|Return|Implement|Given that|A |An )/i.test(displayPrompt)) {
+      const problemStart = displayPrompt.search(/(?:Given|You are given|Write a|Design a|Find|Return|Implement)/i);
+      if (problemStart > 0) {
+        displayPrompt = displayPrompt.slice(problemStart).trim();
+      }
+    }
+
+    // Format "Example:", "Example 1:", "Constraints:", "Input:", "Output:" with markdown linebreaks and bolding
     displayPrompt = displayPrompt
       .replace(/(Example\s*\d*:?)/gi, '\n\n**$1**\n')
       .replace(/(Input:)/gi, '\n- **Input:**')

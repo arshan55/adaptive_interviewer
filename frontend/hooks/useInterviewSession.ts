@@ -98,9 +98,10 @@ export function useInterviewSession(interviewId: string | null) {
           setCurrentQuestionIndex(unansweredIdx);
         }
       } else if (typeof window !== 'undefined') {
-        // If an active session is already saved in localStorage, resume it instead of creating a brand new duplicate interview
+        // Try to resume an existing active session saved in localStorage
         const existingSessionId = localStorage.getItem('activeInterviewId');
         if (existingSessionId) {
+          let resumed = false;
           try {
             const data = await getInterviewDetails(existingSessionId);
             if (data && (data.status === 'active' || data.status === 'completing' || data.status === 'completed')) {
@@ -109,13 +110,16 @@ export function useInterviewSession(interviewId: string | null) {
               if (unansweredIdx !== -1 && typeof unansweredIdx === 'number') {
                 setCurrentQuestionIndex(unansweredIdx);
               }
-              return;
+              resumed = true;
             }
           } catch {
+            // Stale or deleted session — clear it and fall through
             localStorage.removeItem('activeInterviewId');
           }
+          if (resumed) return;
         }
 
+        // No valid existing session — start fresh or redirect to role selection
         const roleData = localStorage.getItem('selectedRole');
         if (roleData) {
           const parsed = JSON.parse(roleData);
@@ -126,7 +130,10 @@ export function useInterviewSession(interviewId: string | null) {
           }
           setCurrentQuestionIndex(0);
         } else {
+          // Nothing to resume and no role selected — go back to role selection
+          setLoading(false);
           router.push('/interview/role-select');
+          return;
         }
       }
     } catch (err: any) {
