@@ -417,6 +417,7 @@ router.post('/', auth, async (req, res) => {
     const targetDifficulty = config.difficulty === 'adaptive' ? 'easy' : config.difficulty;
 
     let firstQuestionObj = null;
+    let effectiveMode = config.mode;
 
     // Check if resume question should be generated first
     const hasResume = Boolean(config.resumeText && config.resumeText.trim());
@@ -428,7 +429,23 @@ router.post('/', auth, async (req, res) => {
       firstQuestionObj = await selectBestQuestion({
         role,
         targetDifficulty,
-        mode: config.mode,
+        mode: effectiveMode,
+        patterns: config.patterns,
+        company: config.company,
+        seenKeys: new Set([...userPastHistory.seenKeys]),
+        preferredTopics: userPastHistory.topics,
+        recentTopics: [],
+      });
+    }
+
+    // Fallback: if DSA mode yields no questions for this role, fall back to mixed mode
+    if (!firstQuestionObj && effectiveMode === 'dsa') {
+      console.warn(`[Interview] No DSA questions found for role "${role}", falling back to mixed mode`);
+      effectiveMode = 'mixed';
+      firstQuestionObj = await selectBestQuestion({
+        role,
+        targetDifficulty,
+        mode: effectiveMode,
         patterns: config.patterns,
         company: config.company,
         seenKeys: new Set([...userPastHistory.seenKeys]),
@@ -441,6 +458,9 @@ router.post('/', auth, async (req, res) => {
       return res.status(404).json({ error: 'No questions found in the Question Bank matching the criteria.' });
     }
 
+    // Use effective mode (may have fallen back from DSA to mixed)
+    const finalConfig = { ...config, mode: effectiveMode };
+
     // Dynamic AI welcome intro that breaks the ice and asks the user to introduce themselves
     const roleTitle = role.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
     const companyMention = config.company ? ` at ${config.company}` : '';
@@ -450,7 +470,7 @@ router.post('/', auth, async (req, res) => {
       user: req.user.id,
       role,
       programmingLanguage: programmingLanguage,
-      config,
+      config: finalConfig,
       status: 'active',
       startedAt: new Date(),
       turns: [

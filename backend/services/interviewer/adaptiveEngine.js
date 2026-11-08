@@ -96,10 +96,11 @@ Rules for your reply:
 2. If the candidate asks for a hint or is stuck, give a gentle nudge. There is a hard limit of 2 hints per question:
    - Hint 1: Nudge towards the overarching pattern or invariant (e.g. "Think about how sorting or two pointers could reduce the search space").
    - Hint 2: Specific data structure or algorithmic step (e.g. "Consider maintaining a monotonic stack or min-heap of size k").
-3. COMPLEXITY CHECK: If the candidate has submitted working code or explained their approach, but hasn't explicitly analyzed complexity, your follow-up ('followup') SHOULD frequently ask:
+3. COMPLEXITY CHECK: If the candidate has submitted working code or explained their approach, but hasn't explicitly analyzed complexity, ask:
    "What is the Time Complexity and Space Complexity of your solution, and could we optimize either?"
 4. If their explanation, code, and complexity analysis are verified, transition cleanly to the next question ('next').
-5. Your message MUST be at most 2 concise sentences spoken directly to the candidate.`;
+5. NO follow-up questions for coding problems. Only 'hint', 'next', or 'wrap_up'.
+6. Your message MUST be at most 2 concise sentences spoken directly to the candidate.`;
   } else {
     personaInstructions = `You are an executive HR and behavioral interview coach evaluating in the STAR format (Situation, Task, Action, Result).
 Rules for your reply:
@@ -174,7 +175,7 @@ async function prepareTurnContext({ interview, questionIndex, text, code, langua
   const isFinalQuestion = maxQuestions > 0 ? questionIndex >= maxQuestions - 1 : false;
 
   const limits = {
-    followupsRemaining: Math.max(0, MAX_FOLLOWUPS - existingFollowups),
+    followupsRemaining: isCoding ? 0 : Math.max(0, MAX_FOLLOWUPS - existingFollowups),
     hintsRemaining: Math.max(0, MAX_HINTS - existingHints),
     isFinalQuestion,
   };

@@ -208,6 +208,7 @@ export default function InterviewPage() {
 
   const handleRequestHint = async () => {
     if (isGeneratingFeedback) return;
+    voiceInterviewer.stopListening();
     await submitTurn({
       text: "Could you give me a slight hint or guidance on the approach for this coding problem?",
       code: codeContent || undefined,
