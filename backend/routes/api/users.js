@@ -9,7 +9,23 @@ const mammoth = require('mammoth');
 const User = require('../../models/User');
 const auth = require('../../middleware/auth');
 
-// Multer memory storage configuration for file parsing (10 MB max)
+async function parsePdfBuffer(buffer) {
+  // Supports both v2.x class-based and v1.x function-based pdf-parse
+  if (typeof pdfParse === 'function') {
+    const data = await pdfParse(buffer);
+    return (data.text || '').trim();
+  }
+  if (pdfParse?.PDFParse) {
+    const parser = new pdfParse.PDFParse({ data: buffer });
+    const result = await parser.getText();
+    return (result?.text || '').trim();
+  }
+  if (pdfParse?.default && typeof pdfParse.default === 'function') {
+    const data = await pdfParse.default(buffer);
+    return (data.text || '').trim();
+  }
+  throw new Error('Unsupported pdf-parse interface');
+}
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -148,8 +164,7 @@ router.post('/resume/upload', [auth, upload.single('resumeFile')], async (req, r
     let extractedText = '';
 
     if (lowerName.endsWith('.pdf') || mimetype === 'application/pdf') {
-      const pdfData = await pdfParse(buffer);
-      extractedText = (pdfData.text || '').trim();
+      extractedText = await parsePdfBuffer(buffer);
     } else if (
       lowerName.endsWith('.docx') ||
       lowerName.endsWith('.doc') ||
