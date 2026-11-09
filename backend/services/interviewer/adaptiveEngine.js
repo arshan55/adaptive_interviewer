@@ -176,8 +176,9 @@ async function prepareTurnContext({ interview, questionIndex, text, code, langua
     ? Math.min(configuredMaxQuestions, MAX_ROLE_QUESTIONS)
     : MAX_ROLE_QUESTIONS;
   // If maxQuestions is 0, session is in dynamic/continuous mode and has no preset question limit
-  const isFinalQuestion = maxQuestions > 0 && questionIndex > 0
-    ? questionIndex - 1 >= maxQuestions - 1
+  const hasIntroQuestion = currentQ?.questionId === 'intro';
+  const isFinalQuestion = maxQuestions > 0
+    ? (hasIntroQuestion ? questionIndex >= maxQuestions : questionIndex >= maxQuestions - 1)
     : false;
 
   const isCoding = !!(currentQ?.isCodingProblem || currentQ?.questionText?.startsWith('[CODING_PROBLEM]'));

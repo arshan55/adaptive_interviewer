@@ -469,6 +469,27 @@ router.post('/', auth, async (req, res) => {
     const companyMention = config.company ? ` at ${config.company}` : '';
     const welcomeIntroText = `Welcome! I'll be your interviewer today for the ${roleTitle} position${companyMention}. To kick things off, could you briefly introduce yourself and share a bit about your background and recent work?`;
 
+    const isDsaOnly = finalConfig.mode === 'dsa';
+    const introTurn = {
+      speaker: 'ai',
+      type: 'question',
+      text: welcomeIntroText,
+      questionRef: 'intro',
+      createdAt: new Date(),
+    };
+    const firstQuestion = {
+      questionId: firstQuestionObj.questionId || null,
+      title: firstQuestionObj.title || null,
+      questionText: firstQuestionObj.questionText,
+      answerText: null,
+      feedback: null,
+      score: null,
+      topic: firstQuestionObj.topic,
+      isCodingProblem: !!firstQuestionObj.isCodingProblem,
+      normalizedTitle: firstQuestionObj.normalizedTitle || null,
+      patterns: firstQuestionObj.patterns || [],
+    };
+
     const newInterview = new Interview({
       user: req.user.id,
       role,
@@ -476,17 +497,9 @@ router.post('/', auth, async (req, res) => {
       config: finalConfig,
       status: 'active',
       startedAt: new Date(),
-      turns: [
-        {
-          speaker: 'ai',
-          type: 'question',
-          text: welcomeIntroText,
-          questionRef: 'intro',
-          createdAt: new Date(),
-        },
-      ],
+      turns: isDsaOnly ? [{ speaker: 'ai', type: 'question', text: firstQuestion.questionText, questionRef: firstQuestion.questionId, createdAt: new Date() }] : [introTurn],
       questions: [
-        {
+        ...(!isDsaOnly ? [{
           questionId: 'intro',
           title: 'Introduction',
           questionText: welcomeIntroText,
@@ -497,20 +510,8 @@ router.post('/', auth, async (req, res) => {
           isCodingProblem: false,
           normalizedTitle: 'Introduction',
           patterns: [],
-        },
-        {
-          questionId: firstQuestionObj.questionId || null,
-          title: firstQuestionObj.title || null,
-          questionText: firstQuestionObj.questionText,
-          answerText: null,
-          feedback: null,
-          score: null,
-          topic: firstQuestionObj.topic,
-          // Phase 1 & 2: copy metadata from QuestionBank
-          isCodingProblem: !!firstQuestionObj.isCodingProblem,
-          normalizedTitle: firstQuestionObj.normalizedTitle || null,
-          patterns: firstQuestionObj.patterns || [],
-        },
+        }] : []),
+        firstQuestion,
       ],
       date: new Date(),
     });

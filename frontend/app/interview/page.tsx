@@ -608,6 +608,7 @@ export default function InterviewPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
+                  disabled={!isQuestionAnswered || isGeneratingFeedback}
                   className="py-2.5 px-6 rounded-xl border-2 border-black font-black text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2 hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                 >
                   <span>Next Question</span>
