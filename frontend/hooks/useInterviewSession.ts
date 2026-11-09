@@ -91,7 +91,19 @@ export function useInterviewSession(interviewId: string | null) {
       setError(null);
 
       if (interviewId && interviewId !== 'interview') {
-        const data = await getInterviewDetails(interviewId);
+        let data;
+        try {
+          data = await getInterviewDetails(interviewId);
+        } catch (err: any) {
+          // A report link or browser tab can outlive an interview that was
+          // removed. Do not leave the user on a permanent 404 session page.
+          if (err?.response?.status === 404) {
+            localStorage.removeItem('activeInterviewId');
+            router.replace('/interview/role-select');
+            return;
+          }
+          throw err;
+        }
         setInterview(data as unknown as InterviewSessionState);
         const unansweredIdx = data.questions?.findIndex((q: any) => q.answerText == null && q.codeAnswer == null);
         if (unansweredIdx !== -1 && typeof unansweredIdx === 'number') {
