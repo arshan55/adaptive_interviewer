@@ -194,6 +194,7 @@ export default function InterviewPage() {
         voiceInterviewer.stopListening();
       }
     } else if (
+      answerMode === 'voice' &&
       interview?.status === 'active' &&
       interview?.config?.voice &&
       voiceInterviewer.isSupported &&
@@ -204,7 +205,7 @@ export default function InterviewPage() {
       voiceInterviewer.startListening();
       setAnswerMode('voice');
     }
-  }, [isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported, voiceInterviewer.voiceStatus]);
+  }, [answerMode, isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported, voiceInterviewer.voiceStatus]);
 
   const handleRunCode = async () => {
     await executeCode(codeContent, selectedCodingLanguage, codingProblemDetails);
