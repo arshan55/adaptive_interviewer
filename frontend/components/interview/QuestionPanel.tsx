@@ -21,7 +21,6 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   question,
   questionIndex,
   isCodingQuestion,
-  patterns = [],
   activeFollowup = null,
 }) => {
   if (!question) {
@@ -65,7 +64,12 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
       .replace(/(Constraints:)/gi, '\n\n**Constraints:**\n');
   }
 
-  const questionPatterns = question.patterns?.length ? question.patterns : patterns;
+  // Pattern chips belong to the current question. Falling back to the
+  // session's selected pattern list made behavioral questions display random
+  // DSA tags (and made tags look stale after advancing).
+  const questionPatterns = isCodingQuestion && Array.isArray(question.patterns)
+    ? question.patterns
+    : [];
   const problemTitle = question.title || (isCodingQuestion ? 'Coding Challenge' : question.topic || 'Interview Question');
 
   return (
