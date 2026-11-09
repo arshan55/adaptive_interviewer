@@ -440,7 +440,7 @@ router.post('/', auth, async (req, res) => {
 
     // Fallback: if DSA mode yields no questions for this role, fall back to mixed mode
     if (!firstQuestionObj && effectiveMode === 'dsa') {
-      console.warn(`[Interview] No DSA questions found for role "${role}", falling back to mixed mode`);
+      console.error(`[Interview] DSA mode requested but no DSA questions found for role "${role}". Falling back to mixed mode. Check QuestionBank seeding.`);
       effectiveMode = 'mixed';
       firstQuestionObj = await selectBestQuestion({
         role,
@@ -455,7 +455,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     if (!firstQuestionObj) {
-      return res.status(404).json({ error: 'No questions found in the Question Bank matching the criteria.' });
+      return res.status(404).json({ error: 'No questions found in the Question Bank matching the criteria. Try seeding the QuestionBank or select a different mode.' });
     }
 
     // Use effective mode (may have fallen back from DSA to mixed)
@@ -717,6 +717,7 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
           }
 
           if (!nextQuestionObj) {
+            console.log(`[Interview] Selecting next question - role: ${interview.role}, mode: ${interview.config?.mode}, targetDiff: ${currentTargetDiff}`);
             nextQuestionObj = await selectBestQuestion({
               role: interview.role,
               targetDifficulty: currentTargetDiff,
@@ -731,6 +732,10 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
               preferredTopics: currentTopics.length > 0 ? currentTopics : pastQuestionHistory.topics,
               recentTopics: currentTopics,
             });
+            console.log(`[Interview] Next question found: ${nextQuestionObj ? 'yes' : 'no'}`);
+            if (nextQuestionObj) {
+              console.log(`[Interview] Next question: ${nextQuestionObj.title}, isCodingProblem: ${nextQuestionObj.isCodingProblem}`);
+            }
           }
 
           if (nextQuestionObj) {
