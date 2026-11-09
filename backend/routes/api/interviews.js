@@ -770,6 +770,14 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
             questionRef: newQuestion.questionId || null,
             createdAt: new Date(),
           });
+        } else {
+          // No more questions available - wrap up
+          decision.action = 'wrap_up';
+          decision.message = "Thank you for your time! We've exhausted the available questions for this session. I'm now compiling your performance report.";
+          interview.status = 'completing';
+          generateInterviewReport(interview._id).catch((err) =>
+            console.error('Background report generation failed:', err)
+          );
         }
       }
     } else if (decision.action === 'wrap_up') {

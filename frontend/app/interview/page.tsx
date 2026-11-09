@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic,
@@ -29,6 +29,7 @@ import { ReportView } from '@/components/interview/ReportView';
 
 export default function InterviewPage() {
   const pathname = usePathname();
+  const router = useRouter();
   const pathSegments = pathname.split('/');
   const rawId = pathSegments[pathSegments.length - 1];
   const interviewId = rawId && rawId !== 'interview' ? rawId : null;
@@ -101,6 +102,10 @@ export default function InterviewPage() {
             if (comp?.message) {
               voiceInterviewer.speakText(comp.message);
             }
+            // Redirect to report page after a brief delay
+            setTimeout(() => {
+              router.push(`/interview/${interview?._id}`);
+            }, 2000);
           }
         },
       });
