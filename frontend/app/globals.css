@@ -473,6 +473,99 @@ html.dark .fixed.inset-0,
   box-shadow: 0px 0px 0px 0px transparent !important;
 }
 
+/* Dark mode readability pass: keep the light palette unchanged while giving
+   dark surfaces, controls, and secondary text enough contrast to scan easily. */
+.dark body {
+  background-color: #0B1220 !important;
+  color: #E8EEF7 !important;
+}
+
+.dark nav,
+.dark header.bg-white,
+.dark .card,
+.dark .bg-white,
+.dark .bg-white\/95,
+.dark .bg-white\/90,
+.dark .bg-white\/80,
+.dark .bg-slate-50,
+.dark .bg-\[\#F0F4F8\] {
+  background-color: #172235 !important;
+  color: #E8EEF7 !important;
+  border-color: #8FA7C4 !important;
+}
+
+.dark .text-black,
+.dark .text-slate-900,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #F5F8FC !important;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-slate-500 {
+  color: #C4D0E0 !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #0F1A2B !important;
+  color: #F5F8FC !important;
+  border-color: #9DB4D0 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9AAAC0 !important;
+}
+
+.dark .border-black,
+.dark .border-black\/20,
+.dark .border-black\/15,
+.dark .border-black\/10,
+.dark .border-2,
+.dark .border-3,
+.dark .border-4 {
+  border-color: #8FA7C4 !important;
+}
+
+.dark .bg-blue-600,
+.dark .bg-blue-500 {
+  background-color: #4F8CFF !important;
+  color: #07111F !important;
+}
+
+.dark .bg-blue-600:hover,
+.dark .bg-blue-500:hover {
+  background-color: #78A8FF !important;
+}
+
+.dark .text-blue-500,
+.dark .text-blue-600,
+.dark .text-blue-700,
+.dark a.text-blue-600,
+.dark button.text-blue-600 {
+  color: #8DB5FF !important;
+}
+
+.dark .shadow-\[8px_8px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[6px_6px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[4px_4px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[3px_3px_0px_0px_rgba\(0\,0\,0\,1\)\],
+.dark .shadow-\[2px_2px_0px_0px_rgba\(0\,0\,0\,1\)\] {
+  box-shadow: 3px 3px 0 0 #6F86A3 !important;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
