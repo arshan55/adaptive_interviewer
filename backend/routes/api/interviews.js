@@ -658,6 +658,13 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
       : MAX_QUESTIONS;
     const roleQuestionCount = interview.questions.filter((q) => q.questionId !== 'intro').length;
 
+    // Never allow an LLM wrap-up before all configured role questions have
+    // been answered. This is a final server-side guard for early model exits.
+    if (decision.action === 'wrap_up' && maxQuestions > 0 && roleQuestionCount < maxQuestions) {
+      decision.action = 'next';
+      decision.message = "Thank you for that response. Let's continue with the next question.";
+    }
+
     // Handle resulting adaptive action
     if (decision.action === 'followup' || decision.action === 'hint') {
       interview.turns.push({

@@ -258,6 +258,12 @@ ${code}
 function enforceTurnLimits(decision, limits, isFinalQuestion, defaultAction) {
   const result = { ...decision };
 
+  // The model must not end a session before the configured final question.
+  if (result.action === 'wrap_up' && !isFinalQuestion) {
+    result.action = 'next';
+    result.message = 'Thank you for that response. Let\'s continue with the next question.';
+  }
+
   // If signals are provided, ensure score accurately reflects the multi-metric average
   if (result.signals && typeof result.signals.correctness === 'number') {
     result.score = computeAverageScoreFromSignals(result.signals);
