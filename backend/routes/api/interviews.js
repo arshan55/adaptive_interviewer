@@ -562,7 +562,7 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
 
     const { text, metrics, code, language, questionIndex: clientQIndex } = req.body;
     const questionIndex = typeof clientQIndex === 'number'
-      ? clientQIndex
+      ? Math.min(clientQIndex, Math.max(0, (interview.questions || []).length - 1))
       : Math.max(0, (interview.questions || []).length - 1);
 
     const question = interview.questions[questionIndex];
