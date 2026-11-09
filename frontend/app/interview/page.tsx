@@ -72,6 +72,15 @@ export default function InterviewPage() {
   const [selectedCodingLanguage, setSelectedCodingLanguage] = useState('javascript');
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const answerDraftsRef = React.useRef<Record<string, { text?: string; code?: string }>>({});
+  const currentDraftKey = currentQuestion?._id || currentQuestion?.questionId || `question-${currentQuestionIndex}`;
+  const existingTurns = interview?.turns || [];
+  const currentQuestionTurns = existingTurns.filter((turn) => turn.questionRef === currentQuestion?.questionId);
+  const lastTurn = currentQuestionTurns[currentQuestionTurns.length - 1];
+  const hasActiveFollowup = Boolean(lastTurn && lastTurn.speaker === 'ai' && lastTurn.type === 'followup');
+  const activeFollowupText = hasActiveFollowup ? lastTurn?.text : null;
+  const hasSubmittedAnswer = Boolean(currentQuestion?.answerText || currentQuestion?.codeAnswer);
+  const isQuestionAnswered = Boolean(currentQuestion?.feedback || currentQuestion?.score != null);
 
   // Set default code snippet or language from interview config
   useEffect(() => {
@@ -82,16 +91,29 @@ export default function InterviewPage() {
 
   // Set code signature when coding question or language changes
   useEffect(() => {
-    if (isCodingQuestion && codingProblemDetails?.functionSignature) {
+    if (!isCodingQuestion) {
+      setCodeContent('');
+      return;
+    }
+
+    const draft = answerDraftsRef.current[currentDraftKey];
+    if (currentQuestion?.codeAnswer != null) {
+      setCodeContent(currentQuestion.codeAnswer);
+      return;
+    }
+    if (draft?.code != null) {
+      setCodeContent(draft.code);
+      return;
+    }
+
+    if (codingProblemDetails?.functionSignature) {
       const sig =
         codingProblemDetails.functionSignature[selectedCodingLanguage] ||
         codingProblemDetails.functionSignature['javascript'] ||
         '';
       setCodeContent(sig);
-    } else if (!isCodingQuestion) {
-      setCodeContent('');
     }
-  }, [isCodingQuestion, codingProblemDetails, selectedCodingLanguage, currentQuestionIndex]);
+  }, [isCodingQuestion, codingProblemDetails, selectedCodingLanguage, currentQuestionIndex, currentDraftKey, currentQuestion?.codeAnswer]);
 
   // Voice interviewer integration
   const voiceInterviewer = useVoiceInterviewer({
@@ -143,14 +165,17 @@ export default function InterviewPage() {
       interview?.status === 'active' &&
       currentQuestion?.questionText &&
       lastSpokenQuestionIdxRef.current !== currentQuestionIndex &&
+      (!hasSubmittedAnswer || hasActiveFollowup) &&
       voiceInterviewer.isSupported
     ) {
       lastSpokenQuestionIdxRef.current = currentQuestionIndex;
       // Slight delay so the user sees the transition before speaking begins
       const timer = setTimeout(() => {
-        let textToSpeak = currentQuestion.questionText;
+        let textToSpeak = hasActiveFollowup && activeFollowupText
+          ? activeFollowupText
+          : currentQuestion.questionText;
 
-        if (isCodingQuestion) {
+        if (isCodingQuestion && !hasActiveFollowup) {
           const title = currentQuestion.title;
           if (title) {
             textToSpeak = `Here is your next coding challenge: ${title}. Please review the problem description and implement your solution in the code editor.`;
@@ -163,16 +188,16 @@ export default function InterviewPage() {
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [currentQuestionIndex, currentQuestion?.questionText, currentQuestion?.title, isCodingQuestion, interview?.status, voiceInterviewer.isSupported]);
+  }, [currentQuestionIndex, currentQuestion?.questionText, currentQuestion?.title, isCodingQuestion, hasSubmittedAnswer, hasActiveFollowup, activeFollowupText, interview?.status, voiceInterviewer.isSupported]);
 
-  // Reset runner and code when question changes
+  // Restore persisted answers or local drafts when revisiting a question.
   useEffect(() => {
     resetCodeRunner();
-    setTextAnswer('');
-    setCodeContent('');
-  }, [currentQuestionIndex, resetCodeRunner]);
+    const draft = answerDraftsRef.current[currentDraftKey];
+    setTextAnswer(hasActiveFollowup ? (draft?.text || '') : (currentQuestion?.answerText ?? draft?.text ?? ''));
+    setCodeContent(currentQuestion?.codeAnswer ?? draft?.code ?? '');
+  }, [currentQuestionIndex, currentDraftKey, currentQuestion?.answerText, currentQuestion?.codeAnswer, hasActiveFollowup, resetCodeRunner]);
 
-  const existingTurns = interview?.turns || [];
   const followupsUsed = existingTurns.filter(
     (t) => t.speaker === 'ai' && t.type === 'followup' && t.questionRef === currentQuestion?.questionId
   ).length;
@@ -182,18 +207,12 @@ export default function InterviewPage() {
   const hintsRemaining = Math.max(0, 2 - hintsUsed);
   const followupsRemaining = Math.max(0, 2 - followupsUsed);
 
-  // Check if there is an active pending follow-up question asked by the AI for the current question
-  const currentQuestionTurns = existingTurns.filter(
-    (t) => t.questionRef === currentQuestion?.questionId
-  );
-  const lastTurn = currentQuestionTurns[currentQuestionTurns.length - 1];
-  const hasActiveFollowup = Boolean(lastTurn && lastTurn.speaker === 'ai' && lastTurn.type === 'followup');
-  const activeFollowupText = hasActiveFollowup ? lastTurn?.text : null;
-
   // Voice state: In coding questions, voice auto-listen is disabled by default to prevent accidental turns while typing,
-  // UNLESS the AI has just asked a follow-up question (e.g. TC/SC question) that requires the candidate to speak!
+  // UNLESS the AI has asked a follow-up that requires the candidate to speak.
   useEffect(() => {
-    if (isCodingQuestion && !hasActiveFollowup) {
+    if (hasSubmittedAnswer && !hasActiveFollowup) {
+      if (voiceInterviewer.isVoiceActive) voiceInterviewer.stopListening();
+    } else if (isCodingQuestion && !hasActiveFollowup) {
       if (voiceInterviewer.isVoiceActive) {
         voiceInterviewer.stopListening();
       }
@@ -201,6 +220,7 @@ export default function InterviewPage() {
       answerMode === 'voice' &&
       interview?.status === 'active' &&
       interview?.config?.voice &&
+      (!hasSubmittedAnswer || hasActiveFollowup) &&
       voiceInterviewer.isSupported &&
       voiceInterviewer.voiceStatus !== 'speaking' &&
       voiceInterviewer.voiceStatus !== 'submitting' &&
@@ -209,7 +229,23 @@ export default function InterviewPage() {
       voiceInterviewer.startListening();
       setAnswerMode('voice');
     }
-  }, [answerMode, isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported, voiceInterviewer.voiceStatus]);
+  }, [answerMode, isCodingQuestion, hasActiveFollowup, hasSubmittedAnswer, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported, voiceInterviewer.voiceStatus]);
+
+  const updateTextAnswer = (value: string) => {
+    setTextAnswer(value);
+    answerDraftsRef.current[currentDraftKey] = {
+      ...answerDraftsRef.current[currentDraftKey],
+      text: value,
+    };
+  };
+
+  const updateCodeContent = (value: string) => {
+    setCodeContent(value);
+    answerDraftsRef.current[currentDraftKey] = {
+      ...answerDraftsRef.current[currentDraftKey],
+      code: value,
+    };
+  };
 
   const handleRunCode = async () => {
     await executeCode(codeContent, selectedCodingLanguage, codingProblemDetails);
@@ -246,9 +282,15 @@ export default function InterviewPage() {
     await submitTurn({
       text: textAnswer,
       onToken: (delta) => voiceInterviewer.feedAiToken(delta),
-      onDone: () => {
+      onDone: (completion) => {
         voiceInterviewer.finishAiStream();
-        setTextAnswer('');
+        if (completion.action === 'followup' || completion.action === 'hint') {
+          setTextAnswer('');
+          answerDraftsRef.current[currentDraftKey] = {
+            ...answerDraftsRef.current[currentDraftKey],
+            text: '',
+          };
+        }
       },
     });
   };
@@ -330,8 +372,6 @@ export default function InterviewPage() {
   }
 
   const isLastQuestion = currentQuestionIndex >= (interview?.questions?.length || 1) - 1;
-  const isQuestionAnswered = Boolean(currentQuestion?.feedback || currentQuestion?.score != null);
-
   return (
     <div
       className="min-h-screen bg-[#F0F4F8] relative flex flex-col selection:bg-yellow-200 selection:text-black"
@@ -514,7 +554,7 @@ export default function InterviewPage() {
                   <textarea
                     id="followup-ans"
                     value={textAnswer}
-                    onChange={(e) => setTextAnswer(e.target.value)}
+                    onChange={(e) => updateTextAnswer(e.target.value)}
                     placeholder="Type your answer here..."
                     className="w-full min-h-[140px] p-4 text-base font-medium rounded-xl border-2 border-black bg-white text-black placeholder-gray-500 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isGeneratingFeedback}
@@ -534,7 +574,7 @@ export default function InterviewPage() {
             ) : isCodingQuestion ? (
               <CodeEditorPanel
                 code={codeContent}
-                onChange={setCodeContent}
+                onChange={updateCodeContent}
                 selectedLanguage={selectedCodingLanguage}
                 onLanguageChange={setSelectedCodingLanguage}
                 onRunCode={handleRunCode}
@@ -574,7 +614,7 @@ export default function InterviewPage() {
                 <textarea
                   id="text-ans"
                   value={textAnswer}
-                  onChange={(e) => setTextAnswer(e.target.value)}
+                  onChange={(e) => updateTextAnswer(e.target.value)}
                   placeholder="Describe Situation, Task, Action you took, and measurable Results..."
                   className="w-full min-h-[160px] p-4 text-base font-medium rounded-xl border-2 border-black bg-white text-black placeholder-gray-500 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={isGeneratingFeedback}

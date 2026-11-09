@@ -843,3 +843,68 @@ html.dark body,
 .dark .feature-icon svg {
   color: #0F172A !important;
 }
+
+/* Keep role choices bright and readable against the dark setup page. */
+.dark .role-select-section {
+  background: #FFFDF4 !important;
+  background-color: #FFFDF4 !important;
+  border-color: #000 !important;
+  color: #334155 !important;
+  box-shadow: 6px 6px 0 #FEF08A !important;
+}
+
+.dark .role-select-section h2 {
+  color: #0F172A !important;
+}
+
+.dark .role-select-section .border-b-2 {
+  border-color: #000 !important;
+}
+
+.dark .role-option-card {
+  border-color: #000 !important;
+  color: #0F172A !important;
+  box-shadow: 4px 4px 0 #FEF08A !important;
+}
+
+.dark .role-option-card h3,
+.dark .role-option-card p,
+.dark .role-option-card span {
+  color: #0F172A !important;
+}
+
+.dark .role-option-card.role-software-engineer {
+  background: #FDE047 !important;
+}
+
+.dark .role-option-card.role-frontend-developer {
+  background: #F9A8D4 !important;
+}
+
+.dark .role-option-card.role-backend-developer {
+  background: #86EFAC !important;
+}
+
+.dark .role-option-card.role-data-scientist {
+  background: #D8B4FE !important;
+}
+
+.dark .role-option-card.role-product-manager {
+  background: #FDBA74 !important;
+}
+
+.dark .role-option-card.role-devops-engineer {
+  background: #E7E5E4 !important;
+}
+
+.dark .role-option-card.role-ai-engineer {
+  background: #6EE7B7 !important;
+}
+
+.dark .role-option-card.role-ml-engineer {
+  background: #C4B5FD !important;
+}
+
+.dark .role-option-card:hover {
+  filter: brightness(0.97);
+}

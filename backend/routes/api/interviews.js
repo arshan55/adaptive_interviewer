@@ -427,7 +427,7 @@ router.post('/', auth, async (req, res) => {
     let effectiveMode = config.mode;
 
     // Check if resume question should be generated first
-    const hasResume = Boolean(config.resumeText && config.resumeText.trim());
+    const hasResume = effectiveMode !== 'dsa' && Boolean(config.resumeText && config.resumeText.trim());
     if (hasResume && (config.resumeMode === 'pure' || config.resumeMode === 'mix')) {
       firstQuestionObj = await generateResumeQuestion(config.resumeText, role, []);
     }
@@ -452,7 +452,9 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Use effective mode (may have fallen back from DSA to mixed)
-    const finalConfig = { ...config, mode: effectiveMode };
+    const finalConfig = effectiveMode === 'dsa'
+      ? { ...config, mode: effectiveMode, resumeMode: 'none', resumeText: null }
+      : { ...config, mode: effectiveMode };
 
     // Dynamic AI welcome intro that breaks the ice and asks the user to introduce themselves
     const roleTitle = role.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -711,7 +713,7 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
           const currentTopics = interview.questions.map((q) => q.topic).filter(Boolean);
           const pastQuestionHistory = await getUserPastQuestionHistory(req.user.id);
 
-          const hasResumeConfig = Boolean(interview.config?.resumeText && interview.config.resumeText.trim());
+          const hasResumeConfig = interview.config?.mode !== 'dsa' && Boolean(interview.config?.resumeText && interview.config.resumeText.trim());
           const resumeMode = interview.config?.resumeMode || 'none';
 
           // In pure resume mode, always generate from resume; in mix mode, alternate or 50%

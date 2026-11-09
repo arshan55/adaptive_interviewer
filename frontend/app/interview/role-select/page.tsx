@@ -265,8 +265,8 @@ export default function RoleSelectPage() {
         maxQuestions: 0,
         voice: voiceEvaluation,
         company: targetCompany.trim() || null,
-        resumeMode,
-        resumeText: resumeMode !== 'none' ? resumeText.trim() : null,
+        resumeMode: interviewMode === 'dsa' ? 'none' : resumeMode,
+        resumeText: interviewMode === 'dsa' || resumeMode === 'none' ? null : resumeText.trim(),
       },
     };
 
@@ -307,7 +307,7 @@ export default function RoleSelectPage() {
         )}
 
         {/* Step 1: Select Role */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border-4 border-black p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] space-y-6">
+        <div className="role-select-section bg-white/90 backdrop-blur-sm rounded-2xl border-4 border-black p-6 sm:p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] space-y-6">
           <div className="flex items-center gap-2 border-b-2 border-black/10 pb-3">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white text-sm font-black">
               1
@@ -325,7 +325,7 @@ export default function RoleSelectPage() {
                     setSelectedRole(role.id);
                     setError('');
                   }}
-                  className={`relative cursor-pointer transition-all transform hover:-translate-y-1 hover:shadow-xl
+                  className={`role-option-card role-${role.id} relative cursor-pointer transition-all transform hover:-translate-y-1 hover:shadow-xl
                     rounded-xl border-4 border-black p-5 flex flex-col justify-between
                     ${roleColors[role.id]} ${
                     isSelected
@@ -619,7 +619,8 @@ export default function RoleSelectPage() {
           </div>
         </div>
 
-        {/* Resume Configuration Card */}
+        {/* Resume questions do not apply to coding-only interviews. */}
+        {interviewMode !== 'dsa' && (
         <div className="bg-white/95 rounded-2xl border-4 border-black p-6 sm:p-8 space-y-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-purple-200 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -703,6 +704,7 @@ export default function RoleSelectPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Start Interview CTA */}
         <div className="pt-2">
