@@ -1110,8 +1110,11 @@ router.get('/user', auth, async (req, res) => {
     }
 
     const interviews = await Interview.find({ user: req.user.id })
-      .select('-questions')
-      .sort({ date: -1 });
+      .select('_id date role programmingLanguage overallScore overallFeedback report status startedAt endedAt config')
+      .sort({ date: -1 })
+      .limit(100)
+      .maxTimeMS(10000)
+      .lean();
 
     res.json(interviews);
   } catch (err) {

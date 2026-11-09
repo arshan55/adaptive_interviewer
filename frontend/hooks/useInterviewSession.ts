@@ -242,9 +242,10 @@ export function useInterviewSession(interviewId: string | null) {
 
               // Auto-advance to next question if action was 'next'
               if (completionData.action === 'next') {
-                if (completionData.interview.questions.length > interview.questions.length) {
-                  setCurrentQuestionIndex(completionData.interview.questions.length - 1);
-                } else if (currentQuestionIndex < completionData.interview.questions.length - 1) {
+                // The intro and first role question are preloaded. Always move
+                // one position forward; jumping to the newest array item skips
+                // the second question after the intro.
+                if (currentQuestionIndex < completionData.interview.questions.length - 1) {
                   setCurrentQuestionIndex((prev) => prev + 1);
                 }
               } else if (completionData.action === 'wrap_up') {

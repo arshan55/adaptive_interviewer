@@ -35,6 +35,7 @@ export default function InterviewPage() {
   const interviewId = rawId && rawId !== 'interview' ? rawId : null;
 
   const [interviewEnded, setInterviewEnded] = useState(false);
+  const [isEndingInterview, setIsEndingInterview] = useState(false);
   const showEndedAfterSpeechRef = React.useRef(false);
 
   const {
@@ -96,6 +97,7 @@ export default function InterviewPage() {
     onTtsFinished: () => {
       if (showEndedAfterSpeechRef.current) {
         showEndedAfterSpeechRef.current = false;
+        setIsEndingInterview(false);
         setInterviewEnded(true);
       }
     },
@@ -109,6 +111,7 @@ export default function InterviewPage() {
           voiceInterviewer.finishAiStream();
           if (comp?.action === 'wrap_up') {
             voiceInterviewer.stopListening();
+            setIsEndingInterview(true);
             showEndedAfterSpeechRef.current = true;
             if (voiceInterviewer.isSynthesisSupported) {
               voiceInterviewer.speakText('Thank you for your thoughtful responses. That concludes our interview, and I appreciate your time.');
@@ -306,7 +309,7 @@ export default function InterviewPage() {
   if (!interview) return null;
 
   // Completed report view
-  if (!interviewEnded && (interview.status === 'completed' || interview.status === 'completing' || interview.report)) {
+  if (!interviewEnded && !isEndingInterview && (interview.status === 'completed' || interview.status === 'completing' || interview.report)) {
     return (
       <div
         className="min-h-screen bg-[#F0F4F8] relative"
@@ -603,10 +606,12 @@ export default function InterviewPage() {
                   type="button"
                   onClick={async () => {
                     voiceInterviewer.stopListening();
+                    setIsEndingInterview(true);
                     if (voiceInterviewer.isSynthesisSupported) {
                       showEndedAfterSpeechRef.current = true;
                       voiceInterviewer.speakText('Thank you for completing your interview. I appreciate your thoughtful responses. Your report is ready to view.');
                     } else {
+                      setIsEndingInterview(false);
                       setInterviewEnded(true);
                     }
                     await finishSession();
@@ -653,12 +658,13 @@ export default function InterviewPage() {
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-black mb-4">Interview Ended</h2>
               <p className="text-base text-gray-800 font-medium mb-8 leading-relaxed">
-                Thank you for completing your interview. Your performance report is being generated. Click below to view your results.
+                Thank you for completing your interview. Your results are being loaded now. Click below to view your report.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setInterviewEnded(false);
+                  setIsEndingInterview(false);
                   router.push(`/interview/${interview?._id}`);
                 }}
                 className="w-full py-3 px-6 rounded-xl border-2 border-black font-black text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 transition-all"

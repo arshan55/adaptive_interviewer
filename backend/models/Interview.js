@@ -284,4 +284,8 @@ InterviewSchema.pre('save', function(next) {
   next();
 });
 
+// User dashboard queries sort by owner and date. Keep this covered by an
+// index so a large interview history cannot stall the serverless proxy.
+InterviewSchema.index({ user: 1, date: -1 });
+
 module.exports = mongoose.model('Interview', InterviewSchema);

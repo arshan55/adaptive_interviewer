@@ -566,6 +566,78 @@ html.dark .fixed.inset-0,
   box-shadow: 3px 3px 0 0 #6F86A3 !important;
 }
 
+/* Role cards: muted dark surfaces keep large panels calm and make their text
+   readable without changing the light-mode role colors. */
+.dark .role-software-engineer,
+.dark .role-frontend-developer,
+.dark .role-backend-developer,
+.dark .role-data-scientist,
+.dark .role-product-manager,
+.dark .role-devops-engineer,
+.dark .role-ai-engineer,
+.dark .role-ml-engineer,
+.dark .bg-yellow-200.rounded-xl,
+.dark .bg-pink-200.rounded-xl,
+.dark .bg-green-200.rounded-xl,
+.dark .bg-purple-200.rounded-xl,
+.dark .bg-orange-200.rounded-xl,
+.dark .bg-blue-200.rounded-xl,
+.dark .bg-emerald-200.rounded-xl,
+.dark .bg-violet-200.rounded-xl {
+  background-color: #202B3D !important;
+  color: #F5F8FC !important;
+  border-color: #8095B2 !important;
+}
+
+.dark .role-software-engineer:hover,
+.dark .role-frontend-developer:hover,
+.dark .role-backend-developer:hover,
+.dark .role-data-scientist:hover,
+.dark .role-product-manager:hover,
+.dark .role-devops-engineer:hover,
+.dark .role-ai-engineer:hover,
+.dark .role-ml-engineer:hover,
+.dark .bg-yellow-200.rounded-xl:hover,
+.dark .bg-pink-200.rounded-xl:hover,
+.dark .bg-green-200.rounded-xl:hover,
+.dark .bg-purple-200.rounded-xl:hover,
+.dark .bg-orange-200.rounded-xl:hover,
+.dark .bg-blue-200.rounded-xl:hover,
+.dark .bg-emerald-200.rounded-xl:hover,
+.dark .bg-violet-200.rounded-xl:hover {
+  background-color: #2A3950 !important;
+  border-color: #B7C8DE !important;
+}
+
+.dark .ring-blue-500 {
+  --tw-ring-color: #F6D365 !important;
+}
+
+/* The selected role uses a warm highlight instead of a large blue block. */
+.dark .role-software-engineer.border-yellow-400,
+.dark .role-frontend-developer.border-yellow-400,
+.dark .role-backend-developer.border-yellow-400,
+.dark .role-data-scientist.border-yellow-400,
+.dark .role-product-manager.border-yellow-400,
+.dark .role-devops-engineer.border-yellow-400,
+.dark .role-ai-engineer.border-yellow-400,
+.dark .role-ml-engineer.border-yellow-400 {
+  background-color: #5B4720 !important;
+  border-color: #F6D365 !important;
+  color: #FFF8E1 !important;
+}
+
+.dark .role-software-engineer p,
+.dark .role-frontend-developer p,
+.dark .role-backend-developer p,
+.dark .role-data-scientist p,
+.dark .role-product-manager p,
+.dark .role-devops-engineer p,
+.dark .role-ai-engineer p,
+.dark .role-ml-engineer p {
+  color: #C9D5E5 !important;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
