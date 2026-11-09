@@ -682,8 +682,8 @@ export default function InterviewPage() {
         )}
 
         {interviewEnded && (
-          <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm flex items-center justify-center">
-            <div className="bg-white rounded-2xl border-4 border-black p-8 sm:p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full mx-4">
+          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white opacity-100 rounded-2xl border-4 border-black p-8 sm:p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full mx-4">
               <div className="w-20 h-20 rounded-full bg-yellow-100 border-4 border-black flex items-center justify-center text-black mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <CheckCircle2 className="w-10 h-10 text-black" />
               </div>
