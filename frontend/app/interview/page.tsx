@@ -35,6 +35,7 @@ export default function InterviewPage() {
   const interviewId = rawId && rawId !== 'interview' ? rawId : null;
 
   const [interviewEnded, setInterviewEnded] = useState(false);
+  const showEndedAfterSpeechRef = React.useRef(false);
 
   const {
     interview,
@@ -92,6 +93,12 @@ export default function InterviewPage() {
 
   // Voice interviewer integration
   const voiceInterviewer = useVoiceInterviewer({
+    onTtsFinished: () => {
+      if (showEndedAfterSpeechRef.current) {
+        showEndedAfterSpeechRef.current = false;
+        setInterviewEnded(true);
+      }
+    },
     onTurnAutoSubmit: (transcript, voiceMetrics) => {
       voiceInterviewer.stopListening();
       submitTurn({
@@ -102,10 +109,13 @@ export default function InterviewPage() {
           voiceInterviewer.finishAiStream();
           if (comp?.action === 'wrap_up') {
             voiceInterviewer.stopListening();
-            setInterviewEnded(true);
-            if (comp?.message) {
-              voiceInterviewer.speakText(comp.message);
-  }
+            showEndedAfterSpeechRef.current = true;
+            if (voiceInterviewer.isSynthesisSupported) {
+              voiceInterviewer.speakText('Thank you for your thoughtful responses. That concludes our interview, and I appreciate your time.');
+            } else {
+              showEndedAfterSpeechRef.current = false;
+              setInterviewEnded(true);
+            }
 }
         },
       });
@@ -116,7 +126,7 @@ export default function InterviewPage() {
   useEffect(() => {
     if (interview?.status === 'completing' || interview?.status === 'completed' || interview?.report) {
       voiceInterviewer.stopListening();
-      voiceInterviewer.stopAiSpeaking();
+      if (!showEndedAfterSpeechRef.current) voiceInterviewer.stopAiSpeaking();
     }
   }, [interview?.status, interview?.report]);
 
@@ -187,12 +197,14 @@ export default function InterviewPage() {
       interview?.status === 'active' &&
       interview?.config?.voice &&
       voiceInterviewer.isSupported &&
+      voiceInterviewer.voiceStatus !== 'speaking' &&
+      voiceInterviewer.voiceStatus !== 'submitting' &&
       !voiceInterviewer.isVoiceActive
     ) {
       voiceInterviewer.startListening();
       setAnswerMode('voice');
     }
-  }, [isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported]);
+  }, [isCodingQuestion, hasActiveFollowup, interview?.status, interview?.config?.voice, voiceInterviewer.isSupported, voiceInterviewer.voiceStatus]);
 
   const handleRunCode = async () => {
     await executeCode(codeContent, selectedCodingLanguage, codingProblemDetails);
@@ -293,7 +305,7 @@ export default function InterviewPage() {
   if (!interview) return null;
 
   // Completed report view
-  if (interview.status === 'completed' || interview.status === 'completing' || interview.report) {
+  if (!interviewEnded && (interview.status === 'completed' || interview.status === 'completing' || interview.report)) {
     return (
       <div
         className="min-h-screen bg-[#F0F4F8] relative"
@@ -590,8 +602,12 @@ export default function InterviewPage() {
                   type="button"
                   onClick={async () => {
                     voiceInterviewer.stopListening();
-                    voiceInterviewer.stopAiSpeaking();
-                    setInterviewEnded(true);
+                    if (voiceInterviewer.isSynthesisSupported) {
+                      showEndedAfterSpeechRef.current = true;
+                      voiceInterviewer.speakText('Thank you for completing your interview. I appreciate your thoughtful responses. Your report is ready to view.');
+                    } else {
+                      setInterviewEnded(true);
+                    }
                     await finishSession();
                   }}
                   disabled={isGeneratingFeedback}
@@ -634,7 +650,7 @@ export default function InterviewPage() {
               <div className="w-20 h-20 rounded-full bg-yellow-100 border-4 border-black flex items-center justify-center text-black mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <CheckCircle2 className="w-10 h-10 text-black" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-black mb-4">Interview Complete!</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-black mb-4">Interview Ended</h2>
               <p className="text-base text-gray-800 font-medium mb-8 leading-relaxed">
                 Thank you for completing your interview. Your performance report is being generated. Click below to view your results.
               </p>

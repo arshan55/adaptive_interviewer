@@ -28,6 +28,7 @@ export interface VoiceMetrics {
 export interface UseVoiceInterviewerOptions {
   enabled?: boolean;
   onTurnAutoSubmit?: (transcript: string, metrics: VoiceMetrics) => void;
+  onTtsFinished?: () => void;
 }
 
 /**
@@ -111,6 +112,7 @@ function findBestHumanVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoic
 export function useVoiceInterviewer({
   enabled = true,
   onTurnAutoSubmit,
+  onTtsFinished,
 }: UseVoiceInterviewerOptions = {}) {
   const [isRecognitionSupported, setIsRecognitionSupported] = useState(false);
   const [isSynthesisSupported, setIsSynthesisSupported] = useState(false);
@@ -147,9 +149,14 @@ export function useVoiceInterviewer({
   const fullTurnTranscriptRef = useRef<string>('');
 
   const onTurnAutoSubmitRef = useRef(onTurnAutoSubmit);
+  const onTtsFinishedRef = useRef(onTtsFinished);
   useEffect(() => {
     onTurnAutoSubmitRef.current = onTurnAutoSubmit;
   }, [onTurnAutoSubmit]);
+
+  useEffect(() => {
+    onTtsFinishedRef.current = onTtsFinished;
+  }, [onTtsFinished]);
 
   // Check browser speech support and initialize natural human voices
   useEffect(() => {
@@ -347,6 +354,7 @@ export function useVoiceInterviewer({
     if (ttsQueueRef.current.length === 0) {
       isTtsSpeakingRef.current = false;
       aiFinishedSpeakingTimeRef.current = Date.now();
+      onTtsFinishedRef.current?.();
       // Add a slight cooldown (500ms) after speech ends before turning mic back on to avoid acoustic echo/reverb loop
       setTimeout(() => {
         if (!isTtsSpeakingRef.current && ttsQueueRef.current.length === 0) {
@@ -522,6 +530,7 @@ export function useVoiceInterviewer({
     isVoiceActive,
     voiceStatus,
     isSupported: isRecognitionSupported && isSynthesisSupported,
+    isSynthesisSupported,
     interimTranscript,
     finalTranscript,
     metrics,

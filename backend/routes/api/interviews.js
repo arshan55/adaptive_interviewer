@@ -653,7 +653,10 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
       }
     }
 
-    const maxQuestions = interview.config?.maxQuestions || MAX_QUESTIONS;
+    const maxQuestions = typeof interview.config?.maxQuestions === 'number'
+      ? interview.config.maxQuestions
+      : MAX_QUESTIONS;
+    const roleQuestionCount = interview.questions.filter((q) => q.questionId !== 'intro').length;
 
     // Handle resulting adaptive action
     if (decision.action === 'followup' || decision.action === 'hint') {
@@ -686,7 +689,7 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
 
         // Check if session has reached max questions (if maxQuestions is 0, endless dynamic mode is enabled)
         const isEndlessMode = maxQuestions === 0;
-        if (!isEndlessMode && interview.questions.length >= maxQuestions) {
+        if (!isEndlessMode && roleQuestionCount >= maxQuestions) {
           decision.action = 'wrap_up';
           decision.message = "Thank you so much for your time and thoughtful responses today! That completes all parts of our interview. I am now compiling your comprehensive performance assessment and feedback report.";
           interview.status = 'completing';
@@ -947,10 +950,12 @@ router.post('/:interview_id/answer', auth, async (req, res) => {
       },
     });
 
-    const sessionMaxQuestions = interview.config?.maxQuestions || MAX_QUESTIONS;
+    const sessionMaxQuestions = typeof interview.config?.maxQuestions === 'number'
+      ? interview.config.maxQuestions
+      : MAX_QUESTIONS;
 
     // --- Overall feedback when session reaches configured max questions ---
-    if (questionIndex === sessionMaxQuestions - 1) {
+    if (sessionMaxQuestions > 0 && questionIndex > 0 && questionIndex - 1 === sessionMaxQuestions - 1) {
       const answeredQuestions = interview.questions.filter(
         (q) => q.answerText || q.codeAnswer
       );
