@@ -156,6 +156,8 @@ const buildCandidateQuery = (context, loosenDifficulty = false, role = context.r
     query.isCodingProblem = false;
   } else if (context.mode === 'dsa') {
     query.isCodingProblem = true;
+  } else if (context.mode === 'mixed' && typeof context.preferCoding === 'boolean') {
+    query.isCodingProblem = context.preferCoding;
   }
 
   // Phase 2: Pattern filter
@@ -235,6 +237,24 @@ const selectBestQuestion = async (context) => {
   if (context.mode === 'dsa') {
     const untaggedDsa = await loadAndScoreCandidates({ ...context, patterns: [] }, true, true);
     if (untaggedDsa.length > 0) return untaggedDsa[0].question;
+  }
+
+  // Mixed interviews should prefer the requested side of the rotation, but
+  // never fail when that side is exhausted in the question bank.
+  if (context.mode === 'mixed' && typeof context.preferCoding === 'boolean') {
+    return selectBestQuestion({ ...context, preferCoding: undefined });
+  }
+
+  // Keep a configured interview alive when the user has exhausted unique
+  // matches. Reusing the best available question is preferable to ending the
+  // interview early with a partial report.
+  if (context.maxQuestions > 0) {
+    const reusable = await loadAndScoreCandidates(
+      { ...context, seenKeys: new Set(), preferCoding: undefined },
+      true,
+      true
+    );
+    if (reusable.length > 0) return reusable[0].question;
   }
 
   return null;
