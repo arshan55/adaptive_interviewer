@@ -767,8 +767,8 @@ const AIInterviewCoach = () => {
         {/* Features Section */}
         <div id="features" className="w-full flex justify-center px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8 max-w-5xl w-full">
-            <div className="bg-blue-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="feature-card bg-blue-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="feature-icon w-10 h-10 sm:w-12 sm:h-12 bg-blue-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Realistic Questions</h3>
@@ -776,8 +776,8 @@ const AIInterviewCoach = () => {
                 Practice with AI-powered questions tailored to your field and experience level.
               </p>
             </div>
-            <div className="bg-emerald-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="feature-card bg-emerald-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="feature-icon w-10 h-10 sm:w-12 sm:h-12 bg-emerald-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <Target className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Personalized Feedback</h3>
@@ -785,8 +785,8 @@ const AIInterviewCoach = () => {
                 Receive instant, actionable feedback to help you improve after every session.
               </p>
             </div>
-            <div className="bg-yellow-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="feature-card bg-yellow-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="feature-icon w-10 h-10 sm:w-12 sm:h-12 bg-yellow-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <Award className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Track Progress</h3>
@@ -794,8 +794,8 @@ const AIInterviewCoach = () => {
                 Monitor your growth with detailed stats and see how you stack up over time.
               </p>
             </div>
-            <div className="bg-pink-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-pink-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="feature-card bg-pink-100 border-4 border-black p-5 sm:p-6 rounded-2xl shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+              <div className="feature-icon w-10 h-10 sm:w-12 sm:h-12 bg-pink-200 border-2 border-black rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <User className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
               </div>
               <h3 className="text-lg sm:text-xl font-black text-black mb-1.5 sm:mb-2">Flexible Practice</h3>

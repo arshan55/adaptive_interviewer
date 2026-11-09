@@ -54,6 +54,12 @@ console.log(`Interviews route — MAX_QUESTIONS=${MAX_QUESTIONS} LEGACY_MEDIA_EV
 
 const VIDEO_ANSWER_PLACEHOLDER = '[Video answer submitted — recording not stored]';
 
+/** Rotate bank-backed mixed questions evenly, ignoring resume prompts. */
+const getNextMixedCategory = (questions = []) => {
+  const bankQuestionCount = questions.filter((q) => q.questionId && q.questionId !== 'intro').length;
+  return ['dsa', 'fundamentals', 'behavioral'][bankQuestionCount % 3];
+};
+
 /** Check if a question is a coding problem (new field first, then prefix fallback for old data). */
 const isCodingQuestion = (q) =>
   q.isCodingProblem === true || q.questionText.startsWith('[CODING_PROBLEM]');
@@ -432,7 +438,7 @@ router.post('/', auth, async (req, res) => {
         targetDifficulty,
         mode: effectiveMode,
         maxQuestions: config.maxQuestions,
-        preferCoding: effectiveMode === 'mixed',
+        preferredCategory: effectiveMode === 'mixed' ? 'dsa' : undefined,
         patterns: config.patterns,
         company: config.company,
         seenKeys: new Set([...userPastHistory.seenKeys]),
@@ -724,8 +730,8 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
               targetDifficulty: currentTargetDiff,
               mode: interview.config?.mode,
               maxQuestions,
-              preferCoding: interview.config?.mode === 'mixed'
-                ? interview.questions.filter((q) => q.questionId !== 'intro').length % 2 === 0
+              preferredCategory: interview.config?.mode === 'mixed'
+                ? getNextMixedCategory(interview.questions)
                 : undefined,
               patterns: interview.config?.patterns,
               company: interview.config?.company,
@@ -1020,6 +1026,9 @@ router.post('/:interview_id/answer', auth, async (req, res) => {
           role: interview.role,
           targetDifficulty,
           mode: interview.config?.mode,
+          preferredCategory: interview.config?.mode === 'mixed'
+            ? getNextMixedCategory(interview.questions)
+            : undefined,
           patterns: interview.config?.patterns,
           company: interview.config?.company || interview.company,
           seenKeys: new Set([

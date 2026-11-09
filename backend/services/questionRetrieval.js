@@ -37,6 +37,29 @@ const splitTags = (value) => {
 
 const unique = (values) => [...new Set(values.filter(Boolean))];
 
+const MIXED_QUESTION_TYPES = ['dsa', 'fundamentals', 'behavioral'];
+
+const classifyQuestion = (question) => {
+  if (question?.isCodingProblem === true || /^\s*\[CODING_PROBLEM\]/i.test(question?.questionText || '')) {
+    return 'dsa';
+  }
+
+  const tags = splitTags(question?.tags);
+  const topic = normalizeText(question?.topic);
+  const source = normalizeText(question?.sourceSystem);
+  if (
+    tags.includes('behavioral') ||
+    tags.includes('hr') ||
+    topic.startsWith('behavioral') ||
+    source.includes('behavioral') ||
+    (Array.isArray(question?.rubricNotes) && question.rubricNotes.length > 0)
+  ) {
+    return 'behavioral';
+  }
+
+  return 'fundamentals';
+};
+
 const questionIdentityKeys = (question) => unique([
   normalizeText(question.questionId),
   normalizeText(question.link),
@@ -156,6 +179,8 @@ const buildCandidateQuery = (context, loosenDifficulty = false, role = context.r
     query.isCodingProblem = false;
   } else if (context.mode === 'dsa') {
     query.isCodingProblem = true;
+  } else if (context.mode === 'mixed' && context.preferredCategory) {
+    query.isCodingProblem = context.preferredCategory === 'dsa';
   } else if (context.mode === 'mixed' && typeof context.preferCoding === 'boolean') {
     query.isCodingProblem = context.preferCoding;
   }
@@ -182,6 +207,9 @@ const loadAndScoreCandidates = async (context, loosenDifficulty = false, loosenP
   return candidateGroups
     .flat()
     .filter((question) => {
+      if (context.mode === 'mixed' && context.preferredCategory && classifyQuestion(question) !== context.preferredCategory) {
+        return false;
+      }
       const identityKeys = questionIdentityKeys(question);
       return !identityKeys.some((key) => context.seenKeys.has(key));
     })
@@ -248,6 +276,24 @@ const selectBestQuestion = async (context) => {
     if (withoutCompany.length > 0) return withoutCompany[0].question;
   }
 
+  // Mixed interviews target a one-third rotation. If a category is empty for
+  // this role/company, fill the slot from the next available category.
+  if (context.mode === 'mixed' && context.preferredCategory) {
+    const startIndex = MIXED_QUESTION_TYPES.indexOf(context.preferredCategory);
+    const alternatives = [1, 2]
+      .map((offset) => MIXED_QUESTION_TYPES[(startIndex + offset) % MIXED_QUESTION_TYPES.length]);
+
+    for (const preferredCategory of alternatives) {
+      const fallback = await loadAndScoreCandidates(
+        { ...context, preferredCategory, patterns: [] },
+        true,
+        true,
+        true
+      );
+      if (fallback.length > 0) return fallback[0].question;
+    }
+  }
+
   // Mixed interviews should prefer the requested side of the rotation, but
   // never fail when that side is exhausted in the question bank.
   if (context.mode === 'mixed' && typeof context.preferCoding === 'boolean') {
@@ -272,6 +318,7 @@ const selectBestQuestion = async (context) => {
 module.exports = {
   normalizeText,
   splitTags,
+  classifyQuestion,
   questionIdentityKeys,
   questionTopics,
   scoreQuestion,

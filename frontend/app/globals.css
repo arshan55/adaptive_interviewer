@@ -813,3 +813,33 @@ html.dark body,
   background-color: rgba(22, 22, 22, 0.8) !important;
   backdrop-filter: none !important;
 }
+
+/* Homepage feature cards use neutral paper surfaces in dark mode. This keeps
+   their text and icons readable without changing any light-mode colors. */
+.dark .feature-card {
+  background: #FFFDF4 !important;
+  background-color: #FFFDF4 !important;
+  color: #334155 !important;
+  border-color: #000 !important;
+  box-shadow: 5px 5px 0 #FEF08A !important;
+}
+
+.dark .feature-card h3 {
+  color: #0F172A !important;
+}
+
+.dark .feature-card p {
+  color: #334155 !important;
+}
+
+.dark .feature-icon {
+  background: #F4EFDF !important;
+  background-color: #F4EFDF !important;
+  border-color: #000 !important;
+  box-shadow: 2px 2px 0 #000 !important;
+  color: #0F172A !important;
+}
+
+.dark .feature-icon svg {
+  color: #0F172A !important;
+}

@@ -487,7 +487,7 @@ export default function InterviewPage() {
 
           {/* ONE Answer Area */}
           <div className="space-y-6">
-            {/* If there is an active AI follow-up (e.g. TC/SC question asked on code), prioritize Voice/Text answer input */}
+            {/* Active interviewer follow-ups use the voice or text answer input. */}
             {hasActiveFollowup ? (
               answerMode === 'voice' ? (
                 <VoiceConversationPanel
@@ -515,7 +515,7 @@ export default function InterviewPage() {
                     id="followup-ans"
                     value={textAnswer}
                     onChange={(e) => setTextAnswer(e.target.value)}
-                    placeholder="e.g. The time complexity is O(N log N) because we insert each element into a heap..."
+                    placeholder="Type your answer here..."
                     className="w-full min-h-[140px] p-4 text-base font-medium rounded-xl border-2 border-black bg-white text-black placeholder-gray-500 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isGeneratingFeedback}
                   />
