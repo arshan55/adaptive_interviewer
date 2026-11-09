@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const SILENCE_DELAY_MS = 1800; // 1.8s after real speech → auto-submit
 const SILENCE_DELAY_FILLER_MS = 4000; // 4s after a filler-only chunk → still thinking
-const MIN_SUBSTANTIVE_WORDS = 4; // need ≥4 non-filler words before auto-submitting
+// Short answers are valid interview responses. Waiting for four words made
+// concise introductions appear to be ignored because they never auto-submitted.
+const MIN_SUBSTANTIVE_WORDS = 2;
 const FILLER_REGEX =
   /\b(um+|uh+|ah+|er+|hmm+|like|you know|so|basically|literally|actually|i mean|right)\b/gi;
 
@@ -289,6 +291,12 @@ export function useVoiceInterviewer({
 
       rec.onerror = (event: any) => {
         if (event.error === 'no-speech' || event.error === 'aborted') return;
+        if (event.error === 'network' || event.error === 'audio-capture') {
+          setVoiceStatus('idle');
+          setTimeout(() => {
+            if (isVoiceActiveRef.current && !micPausedForTtsRef.current) resumeRecognition();
+          }, 250);
+        }
         console.warn('[useVoiceInterviewer] SpeechRecognition error:', event.error);
       };
 

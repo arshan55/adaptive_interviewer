@@ -230,6 +230,13 @@ const selectBestQuestion = async (context) => {
     }
   }
 
+  // Some existing QuestionBank records predate pattern tagging. For DSA
+  // sessions, still return a coding question when pattern metadata is absent.
+  if (context.mode === 'dsa') {
+    const untaggedDsa = await loadAndScoreCandidates({ ...context, patterns: [] }, true, true);
+    if (untaggedDsa.length > 0) return untaggedDsa[0].question;
+  }
+
   return null;
 };
 
