@@ -438,6 +438,11 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    console.log(`[Interview] First question selection - role: ${role}, mode: ${effectiveMode}, found: ${firstQuestionObj ? 'yes' : 'no'}`);
+    if (firstQuestionObj) {
+      console.log(`[Interview] First question: ${firstQuestionObj.title}, isCodingProblem: ${firstQuestionObj.isCodingProblem}`);
+    }
+
     // Fallback: if DSA mode yields no questions for this role, fall back to mixed mode
     if (!firstQuestionObj && effectiveMode === 'dsa') {
       console.warn(`[Interview] No DSA questions found for role "${role}", falling back to mixed mode`);
@@ -717,6 +722,7 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
           }
 
           if (!nextQuestionObj) {
+            console.log(`[Interview] Selecting next question - role: ${interview.role}, mode: ${interview.config?.mode}, targetDiff: ${currentTargetDiff}`);
             nextQuestionObj = await selectBestQuestion({
               role: interview.role,
               targetDifficulty: currentTargetDiff,
@@ -731,6 +737,10 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
               preferredTopics: currentTopics.length > 0 ? currentTopics : pastQuestionHistory.topics,
               recentTopics: currentTopics,
             });
+            console.log(`[Interview] Next question found: ${nextQuestionObj ? 'yes' : 'no'}`);
+            if (nextQuestionObj) {
+              console.log(`[Interview] Next question: ${nextQuestionObj.title}, isCodingProblem: ${nextQuestionObj.isCodingProblem}`);
+            }
           }
 
           if (nextQuestionObj) {
