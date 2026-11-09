@@ -36,6 +36,7 @@ export default function InterviewPage() {
 
   const [interviewEnded, setInterviewEnded] = useState(false);
   const [isEndingInterview, setIsEndingInterview] = useState(false);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const showEndedAfterSpeechRef = React.useRef(false);
 
   const {
@@ -350,7 +351,18 @@ export default function InterviewPage() {
           totalQuestions={interview.questions.length}
           durationMin={interview.config?.durationMin}
           startedAt={interview.date}
-          onFinish={finishSession}
+          onFinish={() => setShowFinishConfirm(true)}
+          onTimeExpired={async () => {
+            setIsEndingInterview(true);
+            voiceInterviewer.stopListening();
+            if (voiceInterviewer.isSynthesisSupported) {
+              showEndedAfterSpeechRef.current = true;
+              voiceInterviewer.speakText('Time is up. Thank you for your thoughtful responses. Your results are being loaded now.');
+            } else {
+              setInterviewEnded(true);
+            }
+            await finishSession();
+          }}
           isFinishing={isFinishing}
         />
 
@@ -606,15 +618,7 @@ export default function InterviewPage() {
                   type="button"
                   onClick={async () => {
                     voiceInterviewer.stopListening();
-                    setIsEndingInterview(true);
-                    if (voiceInterviewer.isSynthesisSupported) {
-                      showEndedAfterSpeechRef.current = true;
-                      voiceInterviewer.speakText('Thank you for completing your interview. I appreciate your thoughtful responses. Your report is ready to view.');
-                    } else {
-                      setIsEndingInterview(false);
-                      setInterviewEnded(true);
-                    }
-                    await finishSession();
+                    setShowFinishConfirm(true);
                   }}
                   disabled={isGeneratingFeedback}
                   className="py-2.5 px-6 rounded-xl border-2 border-black font-black text-xs text-white bg-black hover:bg-gray-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2 hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
@@ -650,6 +654,33 @@ export default function InterviewPage() {
         </div>
 
         {/* Interview Ended Overlay */}
+        {showFinishConfirm && (
+          <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl border-4 border-black p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full">
+              <h2 className="text-xl font-black text-black mb-3">End interview now?</h2>
+              <p className="text-sm text-gray-700 font-medium mb-6">
+                The interviewer will thank you, then your results will be prepared from the answers completed so far.
+              </p>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowFinishConfirm(false)} className="flex-1 py-2.5 rounded-xl border-2 border-black bg-white text-black font-black text-xs shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">Keep interviewing</button>
+                <button type="button" onClick={async () => {
+                  setShowFinishConfirm(false);
+                  setIsEndingInterview(true);
+                  voiceInterviewer.stopListening();
+                  if (voiceInterviewer.isSynthesisSupported) {
+                    showEndedAfterSpeechRef.current = true;
+                    voiceInterviewer.speakText('Thank you for your thoughtful responses. We are ending the interview now, and your results are being loaded.');
+                  } else {
+                    setIsEndingInterview(false);
+                    setInterviewEnded(true);
+                  }
+                  await finishSession();
+                }} className="flex-1 py-2.5 rounded-xl border-2 border-black bg-yellow-300 text-black font-black text-xs shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">End & view results</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {interviewEnded && (
           <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm flex items-center justify-center">
             <div className="bg-white rounded-2xl border-4 border-black p-8 sm:p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full mx-4">

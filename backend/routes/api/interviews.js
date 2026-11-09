@@ -28,7 +28,7 @@ const interviewConfigSchema = z.object({
   patterns: z.array(z.string()).default([]),
   difficulty: z.enum(['adaptive', 'easy', 'medium', 'hard']).default('adaptive'),
   durationMin: z.number().int().min(5).max(180).default(30),
-  maxQuestions: z.number().int().min(0).max(20).default(5),
+  maxQuestions: z.number().int().min(0).max(20).default(0),
   voice: z.boolean().default(false),
   company: z.string().nullable().optional().default(null),
   resumeMode: z.enum(['none', 'mix', 'pure']).default('none'),
@@ -42,6 +42,7 @@ const { generateInterviewReport } = require('../../services/interviewer/reportGe
 // --- Configuration ---
 // Max questions per interview session. Configurable via env.
 const MAX_QUESTIONS = parseInt(process.env.MAX_QUESTIONS_PER_INTERVIEW || '5', 10);
+const MAX_ROLE_QUESTIONS = 15;
 
 // When LEGACY_MEDIA_EVAL=true, audio/video blobs are still sent to Gemini multimodal.
 // Default is false — only transcribed text + speech metrics are used.
@@ -430,6 +431,8 @@ router.post('/', auth, async (req, res) => {
         role,
         targetDifficulty,
         mode: effectiveMode,
+        maxQuestions: config.maxQuestions,
+        preferCoding: effectiveMode === 'mixed',
         patterns: config.patterns,
         company: config.company,
         seenKeys: new Set([...userPastHistory.seenKeys]),
@@ -653,9 +656,12 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
       }
     }
 
-    const maxQuestions = typeof interview.config?.maxQuestions === 'number'
+    const configuredMaxQuestions = typeof interview.config?.maxQuestions === 'number'
       ? interview.config.maxQuestions
       : MAX_QUESTIONS;
+    const maxQuestions = configuredMaxQuestions > 0
+      ? Math.min(configuredMaxQuestions, MAX_ROLE_QUESTIONS)
+      : MAX_ROLE_QUESTIONS;
     const roleQuestionCount = interview.questions.filter((q) => q.questionId !== 'intro').length;
 
     // Never allow an LLM wrap-up before all configured role questions have
@@ -732,6 +738,10 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
               role: interview.role,
               targetDifficulty: currentTargetDiff,
               mode: interview.config?.mode,
+              maxQuestions,
+              preferCoding: interview.config?.mode === 'mixed'
+                ? interview.questions.filter((q) => q.questionId !== 'intro').length % 2 === 0
+                : undefined,
               patterns: interview.config?.patterns,
               company: interview.config?.company,
               seenKeys: new Set([
@@ -786,9 +796,16 @@ router.post('/:interview_id/turn', auth, async (req, res) => {
             createdAt: new Date(),
           });
         } else {
-          // No more questions available - wrap up
+          // Do not silently end a configured session with a partial report.
+          // Retrieval normally reuses an available question before reaching
+          // this branch; this response is only for a genuinely empty bank.
+          if (maxQuestions > 0 && roleQuestionCount < maxQuestions) {
+            return res.status(503).json({
+              msg: 'The question bank does not have enough questions for this interview yet. Please try again or choose a different mode.',
+            });
+          }
           decision.action = 'wrap_up';
-          decision.message = "Thank you for your time! We've exhausted the available questions for this session. I'm now compiling your performance report.";
+          decision.message = "Thank you for your time! We've completed the configured questions, and I'm compiling your performance report.";
           interview.status = 'completing';
           generateInterviewReport(interview._id).catch((err) =>
             console.error('Background report generation failed:', err)
@@ -957,9 +974,12 @@ router.post('/:interview_id/answer', auth, async (req, res) => {
       },
     });
 
-    const sessionMaxQuestions = typeof interview.config?.maxQuestions === 'number'
+    const configuredSessionMax = typeof interview.config?.maxQuestions === 'number'
       ? interview.config.maxQuestions
       : MAX_QUESTIONS;
+    const sessionMaxQuestions = configuredSessionMax > 0
+      ? Math.min(configuredSessionMax, MAX_ROLE_QUESTIONS)
+      : MAX_ROLE_QUESTIONS;
 
     // --- Overall feedback when session reaches configured max questions ---
     if (sessionMaxQuestions > 0 && questionIndex > 0 && questionIndex - 1 === sessionMaxQuestions - 1) {

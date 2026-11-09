@@ -15,6 +15,7 @@ const CodingProblemDetails = require('../../models/CodingProblemDetails');
 
 const MAX_FOLLOWUPS = parseInt(process.env.MAX_FOLLOWUPS_PER_QUESTION || '2', 10);
 const MAX_HINTS = parseInt(process.env.MAX_HINTS_PER_QUESTION || '2', 10);
+const MAX_ROLE_QUESTIONS = 15;
 
 const turnDecisionSchema = z.object({
   action: z.enum(['followup', 'hint', 'next', 'wrap_up']),
@@ -168,9 +169,12 @@ async function prepareTurnContext({ interview, questionIndex, text, code, langua
     (t) => t.speaker === 'ai' && t.type === 'hint' && (t.questionRef === qId || !t.questionRef)
   ).length;
 
-  const maxQuestions = typeof interview.config?.maxQuestions === 'number'
+  const configuredMaxQuestions = typeof interview.config?.maxQuestions === 'number'
     ? interview.config.maxQuestions
     : 5;
+  const maxQuestions = configuredMaxQuestions > 0
+    ? Math.min(configuredMaxQuestions, MAX_ROLE_QUESTIONS)
+    : MAX_ROLE_QUESTIONS;
   // If maxQuestions is 0, session is in dynamic/continuous mode and has no preset question limit
   const isFinalQuestion = maxQuestions > 0 && questionIndex > 0
     ? questionIndex - 1 >= maxQuestions - 1

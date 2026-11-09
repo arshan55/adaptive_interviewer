@@ -166,7 +166,7 @@ const InterviewConfigSchema = new mongoose.Schema({
   },
   maxQuestions: {
     type: Number,
-    default: 5
+    default: 0
   },
   voice: {
     type: Boolean,

@@ -12,7 +12,6 @@ import {
   Building,
   Sliders,
   CheckCircle,
-  HelpCircle,
   FileText,
   Upload,
 } from 'lucide-react';
@@ -129,7 +128,6 @@ export default function RoleSelectPage() {
   const [difficulty, setDifficulty] = useState<'adaptive' | 'easy' | 'medium' | 'hard'>('adaptive');
   const [targetCompany, setTargetCompany] = useState('');
   const [durationMin, setDurationMin] = useState(30);
-  const [maxQuestions, setMaxQuestions] = useState(5);
   const [voiceEvaluation, setVoiceEvaluation] = useState(true);
 
   // Resume Options
@@ -264,7 +262,7 @@ export default function RoleSelectPage() {
         patterns: (interviewMode === 'hr' || !activeRole?.hasDSAQuestions) ? [] : selectedPatterns,
         difficulty,
         durationMin,
-        maxQuestions,
+        maxQuestions: 0,
         voice: voiceEvaluation,
         company: targetCompany.trim() || null,
         resumeMode,
@@ -541,9 +539,9 @@ export default function RoleSelectPage() {
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { mins: 15, label: '15 Min' },
                     { mins: 30, label: '30 Min' },
                     { mins: 45, label: '45 Min' },
+                    { mins: 60, label: '1 Hour' },
                   ].map((d) => (
                     <button
                       key={d.mins}
@@ -561,36 +559,9 @@ export default function RoleSelectPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-black mb-1.5 flex items-center gap-1.5">
-                  <HelpCircle className="w-4 h-4" /> Questions Limit
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  {[
-                    { count: 0, label: 'Adaptive Dynamic (No Limit)' },
-                    { count: 3, label: '3 Qs (Quick)' },
-                    { count: 5, label: '5 Qs (Standard)' },
-                    { count: 7, label: '7 Qs (Deep)' },
-                    { count: 10, label: '10 Qs (Full Loop)' },
-                  ].map((q) => (
-                    <button
-                      key={q.count}
-                      type="button"
-                      onClick={() => setMaxQuestions(q.count)}
-                      className={`py-2 px-2 rounded-xl border-2 border-black text-[11px] font-bold text-center transition-all ${
-                        maxQuestions === q.count
-                          ? 'bg-yellow-200 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black'
-                          : 'bg-white text-black hover:bg-slate-100 shadow-sm'
-                      }`}
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[11px] text-gray-600 mt-1">
-                  Choose fixed question limit or select <strong>Adaptive Dynamic</strong> to let the session flow naturally until you decide to complete it.
-                </p>
-              </div>
+              <p className="text-[11px] text-gray-600 mt-1">
+                The interview continues naturally until the timer ends. The interviewer adapts difficulty and question style as the conversation develops.
+              </p>
             </div>
           </div>
 

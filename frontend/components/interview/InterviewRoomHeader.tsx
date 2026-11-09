@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Clock } from 'lucide-react';
 
@@ -10,6 +10,7 @@ interface InterviewRoomHeaderProps {
   durationMin?: number;
   startedAt?: string;
   onFinish: () => void;
+  onTimeExpired?: () => void;
   isFinishing?: boolean;
   // Optional props retained for interface compatibility
   role?: string;
@@ -28,10 +29,12 @@ export const InterviewRoomHeader: React.FC<InterviewRoomHeaderProps> = ({
   durationMin = 30,
   startedAt,
   onFinish,
+  onTimeExpired,
   isFinishing = false,
 }) => {
   const router = useRouter();
   const [secondsRemaining, setSecondsRemaining] = useState<number>(durationMin * 60);
+  const expiredRef = useRef(false);
 
   useEffect(() => {
     const totalSec = (durationMin || 30) * 60;
@@ -45,12 +48,16 @@ export const InterviewRoomHeader: React.FC<InterviewRoomHeaderProps> = ({
       const elapsedSec = Math.floor((Date.now() - startMs) / 1000);
       const remaining = Math.max(0, totalSec - elapsedSec);
       setSecondsRemaining(remaining);
+      if (remaining === 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        onTimeExpired?.();
+      }
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [durationMin, startedAt]);
+  }, [durationMin, startedAt, onTimeExpired]);
 
   const mins = Math.floor(secondsRemaining / 60);
   const secs = secondsRemaining % 60;
