@@ -34,6 +34,8 @@ export default function InterviewPage() {
   const rawId = pathSegments[pathSegments.length - 1];
   const interviewId = rawId && rawId !== 'interview' ? rawId : null;
 
+  const [interviewEnded, setInterviewEnded] = useState(false);
+
   const {
     interview,
     currentQuestionIndex,
@@ -91,6 +93,7 @@ export default function InterviewPage() {
   // Voice interviewer integration
   const voiceInterviewer = useVoiceInterviewer({
     onTurnAutoSubmit: (transcript, voiceMetrics) => {
+      voiceInterviewer.stopListening();
       submitTurn({
         text: transcript,
         metrics: voiceMetrics,
@@ -99,14 +102,11 @@ export default function InterviewPage() {
           voiceInterviewer.finishAiStream();
           if (comp?.action === 'wrap_up') {
             voiceInterviewer.stopListening();
+            setInterviewEnded(true);
             if (comp?.message) {
               voiceInterviewer.speakText(comp.message);
-            }
-            // Redirect to report page after a brief delay
-            setTimeout(() => {
-              router.push(`/interview/${interview?._id}`);
-            }, 2000);
-          }
+  }
+}
         },
       });
     },
@@ -225,6 +225,7 @@ export default function InterviewPage() {
 
   const handleSubmitText = async () => {
     if (!textAnswer.trim()) return;
+    voiceInterviewer.stopListening();
     await submitTurn({
       text: textAnswer,
       onToken: (delta) => voiceInterviewer.feedAiToken(delta),
@@ -590,6 +591,7 @@ export default function InterviewPage() {
                   onClick={async () => {
                     voiceInterviewer.stopListening();
                     voiceInterviewer.stopAiSpeaking();
+                    setInterviewEnded(true);
                     await finishSession();
                   }}
                   disabled={isGeneratingFeedback}
@@ -622,8 +624,33 @@ export default function InterviewPage() {
               </div>
             </div>
           </div>
+          )}
+        </div>
+
+        {/* Interview Ended Overlay */}
+        {interviewEnded && (
+          <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-white rounded-2xl border-4 border-black p-8 sm:p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full mx-4">
+              <div className="w-20 h-20 rounded-full bg-yellow-100 border-4 border-black flex items-center justify-center text-black mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <CheckCircle2 className="w-10 h-10 text-black" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-black mb-4">Interview Complete!</h2>
+              <p className="text-base text-gray-800 font-medium mb-8 leading-relaxed">
+                Thank you for completing your interview. Your performance report is being generated. Click below to view your results.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setInterviewEnded(false);
+                  router.push(`/interview/${interview?._id}`);
+                }}
+                className="w-full py-3 px-6 rounded-xl border-2 border-black font-black text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 transition-all"
+              >
+                View Report
+              </button>
+            </div>
+          </div>
         )}
       </div>
-    </div>
-  );
-}
+    );
+  }
