@@ -3,7 +3,7 @@
  *
  * Usage:
  *   node backend/scripts/importCompanyWiseQuestions.js
- *   node backend/scripts/importCompanyWiseQuestions.js --source ../leetcode-company-wise-problems
+ *   node backend/scripts/importCompanyWiseQuestions.js --source .companywise-import-tmp
  *   node backend/scripts/importCompanyWiseQuestions.js --dry-run
  */
 const path = require('path');
@@ -29,7 +29,9 @@ const parseArgs = (argv) => {
 
   for (let i = 0; i < argv.length; i += 1) {
     const value = argv[i];
-    if (value === '--source' && argv[i + 1]) {
+    if (value.startsWith('--source=')) {
+      args.source = path.resolve(value.slice('--source='.length));
+    } else if (value === '--source' && argv[i + 1]) {
       args.source = path.resolve(argv[i + 1]);
       i += 1;
     } else if (value === '--dry-run') {
@@ -61,19 +63,13 @@ const deriveRole = (row, company) => {
 
 const buildQuestionText = (row) => {
   const title = String(row.Title || '').trim();
-  const topics = parseTopics(row.Topics);
+  const topics = parseTopics(row.Topics || row.Topic || '');
   const difficulty = String(row.Difficulty || '').toLowerCase();
-
-  const intro = `Practice question based on a company-wise LeetCode pattern.`;
-  const topicLine = topics.length > 0 ? `Focus areas: ${topics.join(', ')}.` : '';
-  const metadataLine = `Difficulty: ${difficulty}. Acceptance rate: ${row['Acceptance Rate'] || 'unknown'}.`;
 
   return [
     `[CODING_PROBLEM] ${title}`,
-    intro,
-    topicLine,
-    metadataLine,
-    'Write a correct and efficient solution. Explain edge cases and complexity.',
+    topics.length ? `Topics: ${topics.join(', ')}.` : '',
+    'Solve the problem efficiently. Explain your approach, edge cases, and time and space complexity.',
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -99,13 +95,14 @@ const run = async () => {
   const seenIds = new Set();
 
   for (const filePath of csvFiles) {
-    const company = path.basename(path.dirname(filePath));
+    const baseName = path.basename(filePath, '.csv');
+    const company = baseName.replace(/_(?:6months|1year|2year|alltime)$/i, '').replace(/-/g, ' ').trim();
     const raw = fs.readFileSync(filePath, 'utf8');
     const rows = parseCsv(raw);
 
     for (const row of rows) {
       const title = String(row.Title || '').trim();
-      const link = String(row.Link || '').trim();
+      const link = String(row.Link || row['Leetcode Question Link'] || row['Question Link'] || '').trim();
       if (!title || !link) {
         continue;
       }
@@ -120,8 +117,8 @@ const run = async () => {
       const role = deriveRole(row, company);
       const normalizedTitle = normalizeText(title);
       const frequency = toFloatOrNull(row.Frequency) || 0;
-      const acceptanceRate = toFloatOrNull(row['Acceptance Rate']);
-      const topics = parseTopics(row.Topics);
+      const acceptanceRate = toFloatOrNull(row['Acceptance Rate'] || row.Acceptance);
+      const topics = parseTopics(row.Topics || row.Topic || '');
 
       documents.push({
         questionId,
@@ -137,7 +134,7 @@ const run = async () => {
         link,
         frequency,
         acceptanceRate,
-        sourceSystem: 'leetcode-company-wise',
+        sourceSystem: 'krishnadey30/leetcode-questions-companywise',
       });
     }
   }
@@ -162,7 +159,7 @@ const run = async () => {
   let inserted = 0;
   let updated = 0;
 
-  const shouldEmbed = process.env.RAG_AUTO_EMBED_ON_IMPORT === 'true' || argv.includes('--with-embeddings');
+  const shouldEmbed = process.env.RAG_AUTO_EMBED_ON_IMPORT === 'true' || process.argv.includes('--with-embeddings');
 
   for (const document of documents) {
     const result = await QuestionBank.updateOne(
