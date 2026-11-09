@@ -116,6 +116,7 @@ const TurnSchema = new mongoose.Schema({
 
 const ReportSchema = new mongoose.Schema({
   overallScore: { type: Number, default: null },
+  summary: { type: String, default: '' },
   strengths: { type: [String], default: [] },
   weaknesses: { type: [String], default: [] },
   perQuestionBreakdown: [{

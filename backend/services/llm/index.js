@@ -62,7 +62,7 @@ async function repairJson(provider, brokenJson, opts) {
   ];
   const raw = await withTimeout(
     provider.generate({ ...opts, messages: repairMessages, json: true }),
-    TIMEOUT_MS,
+    opts.timeoutMs || TIMEOUT_MS,
     `${provider.name}/repair`
   );
   return raw;
@@ -98,6 +98,9 @@ function parseAndValidate(raw, schema) {
 async function generate(opts = {}) {
   const { schema, safeDefault = SAFE_FEEDBACK_DEFAULT, json = false } = opts;
   const providers = getProviders();
+  const timeoutMs = Number.isFinite(opts.timeoutMs) && opts.timeoutMs > 0
+    ? opts.timeoutMs
+    : TIMEOUT_MS;
 
   if (providers.length === 0) {
     console.error('[LLM] No providers configured. Check LLM_PROVIDER_ORDER and API keys.');
@@ -109,7 +112,7 @@ async function generate(opts = {}) {
     try {
       const raw = await withTimeout(
         provider.generate(opts),
-        TIMEOUT_MS,
+        timeoutMs,
         `${provider.name}/${opts.task || 'fast'}`
       );
 

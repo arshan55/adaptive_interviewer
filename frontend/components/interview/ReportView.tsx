@@ -335,10 +335,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ interview, onInterviewUp
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                 <div className="p-4 rounded-xl border-2 border-black bg-slate-50 space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <div className="text-3xl font-black text-black font-mono">
-                    {communication.averageWpm || 135}
+                    {communication.averageWpm > 0 ? communication.averageWpm : 'N/A'}
                   </div>
                   <div className="text-xs font-bold text-black">Words Per Minute</div>
-                  <div className="text-[11px] text-gray-600 font-medium">Target: 120-160 WPM</div>
+                  <div className="text-[11px] text-gray-600 font-medium">
+                    {communication.averageWpm > 0 ? 'Target: 120-160 WPM' : 'No speech cadence data'}
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-xl border-2 border-black bg-slate-50 space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
