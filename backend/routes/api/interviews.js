@@ -441,24 +441,8 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Fallback: if DSA mode yields no questions for this role, fall back to mixed mode
-    if (!firstQuestionObj && effectiveMode === 'dsa') {
-      console.error(`[Interview] DSA mode requested but no DSA questions found for role "${role}". Falling back to mixed mode. Check QuestionBank seeding.`);
-      effectiveMode = 'mixed';
-      firstQuestionObj = await selectBestQuestion({
-        role,
-        targetDifficulty,
-        mode: effectiveMode,
-        patterns: config.patterns,
-        company: config.company,
-        seenKeys: new Set([...userPastHistory.seenKeys]),
-        preferredTopics: userPastHistory.topics,
-        recentTopics: [],
-      });
-    }
-
     if (!firstQuestionObj) {
-      return res.status(404).json({ error: 'No questions found in the Question Bank matching the criteria. Try seeding the QuestionBank or select a different mode.' });
+      return res.status(422).json({ error: 'No coding questions are available for this role yet. Try removing the company filter or choosing another role.' });
     }
 
     // Use effective mode (may have fallen back from DSA to mixed)

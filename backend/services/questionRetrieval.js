@@ -138,7 +138,7 @@ const scoreQuestion = (question, context) => {
   };
 };
 
-const buildCandidateQuery = (context, loosenDifficulty = false, role = context.role, loosenPatterns = false) => {
+const buildCandidateQuery = (context, loosenDifficulty = false, role = context.role, loosenPatterns = false, loosenCompany = false) => {
   const query = {
     role,
   };
@@ -147,7 +147,7 @@ const buildCandidateQuery = (context, loosenDifficulty = false, role = context.r
     query.difficulty = context.targetDifficulty;
   }
 
-  if (context.company) {
+  if (context.company && !loosenCompany) {
     query.company = context.company;
   }
 
@@ -168,14 +168,14 @@ const buildCandidateQuery = (context, loosenDifficulty = false, role = context.r
   return query;
 };
 
-const loadAndScoreCandidates = async (context, loosenDifficulty = false, loosenPatterns = false) => {
+const loadAndScoreCandidates = async (context, loosenDifficulty = false, loosenPatterns = false, loosenCompany = false) => {
   const roleCandidates = context.role === 'software-engineer'
     ? ['software-engineer']
     : [context.role, 'software-engineer'];
 
   const candidateGroups = await Promise.all(
     roleCandidates.map((role) =>
-      QuestionBank.find(buildCandidateQuery(context, loosenDifficulty, role, loosenPatterns)).lean()
+      QuestionBank.find(buildCandidateQuery(context, loosenDifficulty, role, loosenPatterns, loosenCompany)).lean()
     )
   );
 
@@ -235,8 +235,17 @@ const selectBestQuestion = async (context) => {
   // Some existing QuestionBank records predate pattern tagging. For DSA
   // sessions, still return a coding question when pattern metadata is absent.
   if (context.mode === 'dsa') {
-    const untaggedDsa = await loadAndScoreCandidates({ ...context, patterns: [] }, true, true);
+    const untaggedDsa = await loadAndScoreCandidates({ ...context, patterns: [] }, true, true, true);
     if (untaggedDsa.length > 0) return untaggedDsa[0].question;
+  }
+
+  // A company is a preference, not a hard requirement. If no matching DSA
+  // problem exists for that company, keep DSA mode and use a role question.
+  if (context.company) {
+    const withoutCompany = await loadAndScoreCandidates(
+      { ...context, patterns: [] }, true, true, true
+    );
+    if (withoutCompany.length > 0) return withoutCompany[0].question;
   }
 
   // Mixed interviews should prefer the requested side of the rotation, but
